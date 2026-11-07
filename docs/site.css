@@ -574,7 +574,31 @@ h2 {
   margin: 0;
 }
 
+.shot {
+  display: grid;
+  justify-items: center;
+}
+
+.share {
+  margin: 26px 0 0;
+  color: var(--ink-soft);
+}
+
+.share a,
+.link-ink {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
 .shot img {
+  max-width: 340px;
   display: block;
   width: 100%;
   height: auto;

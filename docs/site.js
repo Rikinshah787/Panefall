@@ -152,6 +152,54 @@
   };
   for (const button of document.querySelectorAll('[data-toy]')) button.addEventListener('click', () => toys[button.dataset.toy]());
 
+  // The sky is a playground: flick to throw a snowball, drag along a ledge to sweep it,
+  // double-click for a snowman (anywhere that isn't a window).
+  let stroke = null;
+  const inSky = (event) => !event.target.closest('.win, .menubar, a, button');
+  const local = (event) => {
+    const r = hero.getBoundingClientRect();
+    return { x: event.clientX - r.left, y: event.clientY - r.top };
+  };
+  hero.addEventListener('pointerdown', (event) => {
+    if (!inSky(event)) return;
+    const p = local(event);
+    stroke = { samples: [[p.x, p.y, performance.now()]], travelled: 0 };
+  });
+  hero.addEventListener('pointermove', (event) => {
+    if (!stroke) return;
+    const p = local(event);
+    const [lx, ly] = stroke.samples[stroke.samples.length - 1];
+    stroke.travelled += Math.hypot(p.x - lx, p.y - ly);
+    stroke.samples.push([p.x, p.y, performance.now()]);
+    if (stroke.samples.length > 6) stroke.samples.shift();
+    heroEngine.brush(p.x, p.y, p.x - lx, p.y - ly);
+  });
+  window.addEventListener('pointerup', (event) => {
+    if (!stroke) return;
+    const p = local(event);
+    const [fx, fy, ft] = stroke.samples[0];
+    const seconds = Math.max(0.016, (performance.now() - ft) / 1000);
+    const vx = (p.x - fx) / seconds;
+    const vy = (p.y - fy) / seconds;
+    if (stroke.travelled > 30 && Math.hypot(vx, vy) > 650) heroEngine.throwFrom(p.x, p.y, vx * 0.9, vy * 0.9);
+    stroke = null;
+  });
+  hero.addEventListener('dblclick', (event) => {
+    if (inSky(event)) heroEngine.buildSnowman(local(event));
+  });
+
+  // Share buttons (they use whatever address the site is served from).
+  const shareText = 'Snow that piles up on your Mac’s windows, snowmen that wave at your mouse, and rain that beads on the glass ☃️❄️';
+  document.getElementById('share-x').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(window.location.origin + window.location.pathname)}`;
+  document.getElementById('copy-link').addEventListener('click', async (event) => {
+    try {
+      await navigator.clipboard.writeText(window.location.origin + window.location.pathname);
+      event.target.textContent = 'Copied ✓';
+    } catch {
+      event.target.textContent = window.location.href;
+    }
+  });
+
   function fitHero() {
     layout();
     const r = hero.getBoundingClientRect();

@@ -64,8 +64,45 @@
     }
   }
 
+  // Play mode: reach into the weather. Drag to sweep, flick to throw, double-click for a snowman.
+  let playing = false;
+  let stroke = null;
+  function setPlay(on) {
+    playing = on;
+    document.body.classList.toggle('play', on);
+    stroke = null;
+  }
+  canvas.addEventListener('pointerdown', (event) => {
+    if (!playing) return;
+    canvas.setPointerCapture(event.pointerId);
+    stroke = { samples: [[event.clientX, event.clientY, performance.now()]], travelled: 0 };
+  });
+  canvas.addEventListener('pointermove', (event) => {
+    if (!playing || !stroke) return;
+    const [lx, ly] = stroke.samples[stroke.samples.length - 1];
+    const dx = event.clientX - lx;
+    const dy = event.clientY - ly;
+    stroke.travelled += Math.hypot(dx, dy);
+    stroke.samples.push([event.clientX, event.clientY, performance.now()]);
+    if (stroke.samples.length > 6) stroke.samples.shift();
+    engine.brush(event.clientX, event.clientY, dx, dy);
+  });
+  canvas.addEventListener('pointerup', (event) => {
+    if (!playing || !stroke) return;
+    const [fx, fy, ft] = stroke.samples[0];
+    const seconds = Math.max(0.016, (performance.now() - ft) / 1000);
+    const vx = (event.clientX - fx) / seconds;
+    const vy = (event.clientY - fy) / seconds;
+    if (stroke.travelled > 30 && Math.hypot(vx, vy) > 650) engine.throwFrom(event.clientX, event.clientY, vx * 0.9, vy * 0.9);
+    stroke = null;
+  });
+  canvas.addEventListener('dblclick', (event) => {
+    if (playing) engine.buildSnowman({ x: event.clientX, y: event.clientY });
+  });
+
   // Handy for debugging from DevTools.
   window.panefallEngine = engine;
+  window.panefallSetPlay = setPlay;
 
   const bridge = window.panefall;
   if (bridge && bridge.onSettings) {
@@ -91,6 +128,7 @@
       run(command.name, at);
     });
     if (bridge.onSound) bridge.onSound((config) => sound && sound.configure(config));
+    if (bridge.onPlay) bridge.onPlay(setPlay);
   } else {
     window.PanefallDemo.start(engine);
     let pointer = null;

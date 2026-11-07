@@ -170,6 +170,7 @@ function fullState() {
     canOpenAtLogin: app.isPackaged,
     shortcuts: shortcutStatus,
     nowPlaying: nowPlayingInfo,
+    playMode,
     platform: process.platform,
     version: app.getVersion(),
   };
@@ -265,8 +266,9 @@ const COMMANDS = {
   gust: () => broadcast('panefall:command', { name: 'gust' }),
   thunder: () => broadcast('panefall:command', { name: 'thunder' }),
   togglePanel: () => togglePanel(),
+  play: () => setPlayMode(!playMode),
   media: async (action) => {
-    await media.control(action);
+    await media.control(action, nowPlayingInfo);
     setTimeout(pollNowPlaying, 300);
   },
   refreshWeather: () => weather.refresh(),
@@ -281,6 +283,7 @@ const COMMANDS = {
 
 const SHORTCUTS = [
   { accelerator: 'Control+Alt+S', label: 'Open the Quick Panel', command: 'togglePanel' },
+  { accelerator: 'Control+Alt+H', label: 'Play with the weather (Esc to stop)', command: 'play' },
   { accelerator: 'Control+Alt+M', label: 'Build a snowman under the pointer', command: 'snowman', arg: 'pointer' },
   { accelerator: 'Control+Alt+B', label: 'Throw a snowball at the window under the pointer', command: 'snowball', arg: 'pointer' },
   { accelerator: 'Control+Alt+W', label: 'Pause or resume the weather', command: 'togglePause' },
@@ -289,6 +292,31 @@ const SHORTCUTS = [
   { accelerator: 'Control+Alt+P', label: 'Send the snowplow', command: 'plow' },
   { accelerator: 'Control+Alt+O', label: 'Open the Control Center', command: 'openControlCenter' },
 ];
+
+// Play mode: for a little while the weather takes the mouse. Drag to sweep it, flick to throw
+// snowballs, double-click for a snowman. Esc (or 90 seconds) gives the mouse back to your apps.
+let playMode = false;
+let playTimer = null;
+
+function setPlayMode(on) {
+  if (on === playMode) return;
+  playMode = on;
+  for (const win of overlays.values()) if (!win.isDestroyed()) win.setIgnoreMouseEvents(!on);
+  broadcast('panefall:play', on);
+  clearTimeout(playTimer);
+  if (on) {
+    hidePanel();
+    try {
+      globalShortcut.register('Escape', () => setPlayMode(false));
+    } catch {
+      // Esc is taken; the timer and the panel button still end it
+    }
+    playTimer = setTimeout(() => setPlayMode(false), 90_000);
+  } else if (globalShortcut.isRegistered('Escape')) {
+    globalShortcut.unregister('Escape');
+  }
+  refresh();
+}
 
 function toDisplayUnderPointer(name, atPointer) {
   const at = screen.getCursorScreenPoint();
@@ -426,13 +454,15 @@ function showPanel() {
   if (!app.isReady()) return;
   const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
   const area = display.workArea;
-  const width = 340;
-  const top = 34; // room above it for snow to settle on the panel
+  // A compact card floating at the right edge, centred vertically (with room above it for
+  // snow to settle on it).
+  const width = 304;
+  const height = Math.min(596, area.height - 60);
   const bounds = {
-    x: area.x + area.width - width - 12,
-    y: area.y + top,
+    x: area.x + area.width - width - 14,
+    y: Math.round(area.y + Math.max(36, (area.height - height) / 2)),
     width,
-    height: Math.min(880, area.height - top - 12),
+    height,
   };
   if (!panel || panel.isDestroyed()) {
     panel = new BrowserWindow({

@@ -10,7 +10,7 @@
     />
     <meta property="og:title" content="Panefall · Weather that lands on your windows" />
     <meta property="og:description" content="Snow piles up on your windows, rain beads on the glass, and it follows the real weather outside. Free and open source." />
-    <meta property="og:image" content="https://rikinshah787.github.io/Panefall/assets/hero.jpeg" />
+    <meta property="og:image" content="https://panefall.vercel.app/assets/hero.jpeg" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#0d1330" />
     <link rel="icon" href="assets/icon.png" />
@@ -58,7 +58,7 @@
         <aside class="win win-try" data-id="2">
           <div class="bar"><i></i><i></i><i></i><span>Try it here</span></div>
           <div class="win-body">
-            <p>Pick a weather and drag these windows by their title bars. Your pointer is an umbrella: hold it in the rain.</p>
+            <p>Drag these windows by their title bars. <b>Flick</b> anywhere in the sky to throw a snowball, <b>drag</b> along a ledge to sweep it, <b>double-click</b> for a snowman.</p>
             <div class="chips" role="group" aria-label="Weather">
               <button type="button" data-weather="snow" aria-pressed="true">Snow</button>
               <button type="button" data-weather="rain" aria-pressed="false">Rain</button>
@@ -118,20 +118,20 @@
 
       <section id="play" class="section">
         <p class="kicker">Play</p>
-        <h2>Build a snowman. Throw a snowball.</h2>
-        <p class="section-lede">Your desktop is a little winter world now, and it reacts to you.</p>
+        <h2>Reach into the weather.</h2>
+        <p class="section-lede">Your desktop is a little winter world now, and it plays back. Try it in the window up top.</p>
         <div class="cards">
           <article class="card">
+            <h3>🧤 Play mode</h3>
+            <p>Press <kbd>⌃⌥H</kbd> and your mouse reaches into the weather. Sweep snow off a window, wipe raindrops off the glass, flick snowballs across the screen. <kbd>esc</kbd> and you're back to work.</p>
+          </article>
+          <article class="card">
             <h3>☃️ Snowmen</h3>
-            <p>Press <kbd>⌃⌥M</kbd> and a snowman rolls itself up right under your pointer. It waves when you come near, watches your mouse, melts in the rain, and tumbles off if you drag its window away.</p>
+            <p><kbd>⌃⌥M</kbd> and one rolls itself up under your pointer. It waves when you come near, watches your mouse, melts in the rain, and tumbles off if you drag its window away.</p>
           </article>
           <article class="card">
-            <h3>❄️ Snowballs</h3>
-            <p>Press <kbd>⌃⌥B</kbd> to throw one at the window under your pointer. It splats on the glass and slowly slides down.</p>
-          </article>
-          <article class="card">
-            <h3>🎧 Sounds &amp; music</h3>
-            <p>Rain, wind, thunder and a crackling fireplace, generated live so they never loop. Play, pause or skip what's in Apple Music or Spotify, all from the Quick Panel.</p>
+            <h3>🎧 Your music, any app</h3>
+            <p>What's playing on YouTube, Spotify or SoundCloud in Chrome, Brave, Edge, Arc or Safari, or in Music. Plus cozy rain, wind, thunder and fireplace sounds that never loop.</p>
           </article>
         </div>
       </section>
@@ -140,9 +140,10 @@
         <div>
           <p class="kicker">Control Center</p>
           <h2>Make it yours.</h2>
-          <p class="section-lede">Everything lives in one window, and nothing needs a restart.</p>
+          <p class="section-lede">Click the menu-bar icon and a little panel pops in from the side, with a live weather scene and a snowman who waves back.</p>
           <ul class="ticks">
-            <li><b>Quick Panel:</b> click the menu-bar icon (or <kbd class="light">⌃⌥S</kbd>) for weather, toys, sounds and music in a panel that slides in from the edge.</li>
+            <li><b>One tap:</b> weather, Play mode, snowmen, snowballs, gusts, thunder and cozy sounds.</li>
+            <li><b>Your song:</b> what's playing, with the app it's coming from.</li>
             <li><b>Feel:</b> intensity, wind direction and strength, flake size, and how much collects.</li>
             <li><b>Where it lands:</b> on windows, on the Dock, or neither.</li>
             <li><b>Extras:</b> the snowplow, lightning flashes, and showing over full-screen apps.</li>
@@ -150,7 +151,7 @@
           </ul>
         </div>
         <figure class="shot">
-          <img src="assets/control-center.png" alt="The Panefall Control Center with weather choices, live forecast and sliders" width="820" height="900" loading="lazy" />
+          <img src="assets/quick-panel.png" alt="The Panefall Quick Panel: a live weather scene with a snowman, weather bubbles, Play mode, toys and the song that's playing" width="304" height="568" loading="lazy" />
         </figure>
       </section>
 
@@ -245,6 +246,11 @@
           <a class="btn btn-warm" data-repo="/releases/latest" href="#">Download for macOS</a>
           <a class="btn btn-dark" data-repo="" href="#">Star on GitHub</a>
         </div>
+        <p class="share">
+          Know someone who'd love a snowman on their screen?
+          <a id="share-x" href="#" target="_blank" rel="noreferrer">Share on X</a> ·
+          <button type="button" id="copy-link" class="link-ink">Copy link</button>
+        </p>
       </section>
     </main>
 

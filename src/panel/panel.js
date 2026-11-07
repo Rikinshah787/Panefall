@@ -1,7 +1,7 @@
 /*
- * The Quick Panel: a slim panel at the right edge of the screen for the things you reach for
- * often: weather, toys (snowman, snowball, gust, thunder, plow, sweep), ambient sound and the
- * music that's playing. Opened in a plain browser it runs against a built-in preview.
+ * The Quick Panel: a small, cozy card at the edge of the screen. A tiny live scene shows the
+ * current weather (with a snowman who waves at your pointer), then weather bubbles, Play mode,
+ * toys, what's playing, and cozy sounds. Opened in a plain browser it runs on sample data.
  */
 (function () {
   'use strict';
@@ -9,29 +9,69 @@
   const api = window.panefall && window.panefall.getState ? window.panefall : createPreviewApi();
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => [...document.querySelectorAll(selector)];
-  const VERBS = { snow: 'Snowing', rain: 'Raining', storm: 'Storming', leaves: 'Leaves falling', blossoms: 'Blossoms drifting', clear: 'Calm' };
+  const NAMES = { snow: 'Snow', rain: 'Rain', storm: 'Storm', leaves: 'Leaves', blossoms: 'Blossoms', clear: 'Calm' };
 
   let state = null;
   let dragging = null;
+
+  // ------------------------------------------------------------ the live scene
+
+  const sceneBox = $('#scene');
+  const engine = new window.Panefall.Engine($('#scene-canvas'));
+  engine.setSettings({ weather: 'snow', intensity: 0.6, wind: 0.2, depth: 0.5, plow: false });
+
+  function fitScene() {
+    const box = sceneBox.getBoundingClientRect();
+    if (!box.width) return;
+    engine.resize(Math.round(box.width), Math.round(box.height), window.devicePixelRatio || 1);
+    const win = $('.scene-win').getBoundingClientRect();
+    engine.setWindows({
+      windows: [{ id: 1, x: Math.round(win.left - box.left), y: Math.round(win.top - box.top), w: Math.round(win.width), h: Math.round(win.height) }],
+      menubars: [],
+      dock: null,
+    });
+  }
+  fitScene();
+  for (let i = 0; i < 40 * 30; i++) engine.step(1 / 30); // start with snow already settled
+  engine.buildSnowman({ x: 34, y: sceneBox.clientHeight - 6 });
+  engine.snowmen.forEach((m) => {
+    m.scale = 1.25;
+    m.age = 5; // already built
+  });
+  new ResizeObserver(fitScene).observe(sceneBox);
+  sceneBox.addEventListener('pointermove', (event) => {
+    const box = sceneBox.getBoundingClientRect();
+    engine.setPointer({ x: event.clientX - box.left, y: event.clientY - box.top });
+  });
+  sceneBox.addEventListener('pointerleave', () => engine.setPointer(null));
+
+  let last = performance.now();
+  (function frame(now) {
+    requestAnimationFrame(frame); // pauses by itself while the panel is hidden
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    engine.step(dt);
+    engine.draw();
+    // The snowman is the panel's mascot: always there, whatever the weather, and he never melts.
+    if (!engine.snowmen.length) engine.buildSnowman({ x: 34, y: sceneBox.clientHeight - 6 });
+    for (const m of engine.snowmen) m.melt = 0;
+  })(last);
+
+  // ------------------------------------------------------------ rendering
 
   function render(next) {
     if (!next) return;
     state = next;
     const s = state.settings;
-    document.documentElement.classList.toggle('preview', Boolean(state.preview));
 
-    $('#pause').classList.toggle('paused', s.paused);
-    $('#pause-icon').setAttribute('href', s.paused ? '#i-resume' : '#i-pause');
-    $('#status').textContent = statusLine();
+    $('#pause').textContent = s.paused ? '▶️' : '⏸';
+    $('#place').textContent = state.weather ? `${state.weather.location.name} · ${Math.round(state.weather.temperature)}°` : 'Panefall';
+    const weather = state.scene.weather;
+    if (weather !== engine.settings.weather) engine.setSettings({ weather, intensity: Math.max(0.45, state.scene.intensity || 0) });
 
     for (const b of $$('[data-weather]')) b.setAttribute('aria-pressed', String(s.mode === 'manual' && s.weather === b.dataset.weather));
-    const live = $('#live');
-    live.setAttribute('aria-pressed', String(s.mode === 'live'));
-    $('#live-label').textContent = s.location
-      ? state.weather
-        ? `Real weather · ${state.weather.location.name} ${Math.round(state.weather.temperature)}°`
-        : `Real weather · ${s.location.name}`
-      : 'Follow the real weather…';
+    $('#live').setAttribute('aria-pressed', String(s.mode === 'live'));
+    $('#weather-name').textContent = s.paused ? 'Paused' : state.scene.live ? `${NAMES[weather]} · live` : NAMES[weather];
 
     for (const input of $$('[data-setting]')) {
       if (input === dragging) continue;
@@ -39,25 +79,26 @@
       if (input.type === 'checkbox') input.checked = Boolean(value);
       else input.value = String(value);
     }
-    $('[data-setting="intensity"]').disabled = s.mode === 'live' && Boolean(state.weather);
-    $('#mixer').classList.toggle('off', !s.soundOn);
+    $('#intensity').disabled = s.mode === 'live' && Boolean(state.weather);
     paintSliders();
 
-    $('#music').hidden = state.platform !== 'darwin' || !s.nowPlaying;
-    const np = state.nowPlaying;
-    const art = $('#art');
-    art.className = `art ${np ? (np.player === 'Spotify' ? 'spotify' : '') : 'idle'}`;
-    $('#track-title').textContent = np ? np.title : 'Nothing playing';
-    $('#track-artist').textContent = np ? `${np.artist} · ${np.player === 'Music' ? 'Apple Music' : np.player}` : 'Play something in Music or Spotify';
-    $('#play-icon').setAttribute('href', np && np.state === 'playing' ? '#i-pause' : '#i-play');
+    const play = $('#play');
+    play.classList.toggle('on', Boolean(state.playMode));
+    play.textContent = state.playMode ? '✋ Stop playing (esc)' : '🧤 Play with the weather';
+
+    renderMusic(state.nowPlaying);
   }
 
-  function statusLine() {
-    const s = state.settings;
-    if (s.paused) return 'Paused';
-    if (state.paused) return 'Paused while on battery';
-    const verb = VERBS[state.scene.weather] || 'Calm';
-    return state.scene.live && state.weather ? `${verb} · live` : verb;
+  function renderMusic(np) {
+    $('#music').hidden = state.platform !== 'darwin' || !state.settings.nowPlaying;
+    $('#music').classList.toggle('playing', Boolean(np && np.playing !== false));
+    $('#art').dataset.source = np ? np.source : '';
+    $('#track-title').textContent = np ? np.title : 'Nothing playing';
+    $('#track-artist').textContent = np ? np.artist || np.source : 'Play music in an app or a browser tab';
+    $('#track-source').textContent = np ? (np.kind === 'browser' ? `${np.source} · ${np.app.replace(' Browser', '')}` : np.source) : '';
+    $('#transport').hidden = Boolean(np && np.kind === 'browser');
+    $('#go-tab').hidden = !(np && np.kind === 'browser');
+    $('#playpause').textContent = np && np.playing ? '⏸' : '▶️';
   }
 
   function paintSliders() {
@@ -67,7 +108,8 @@
     }
   }
 
-  // Coalesce slider drags into one update per frame.
+  // ------------------------------------------------------------ actions
+
   let pending = {};
   let queued = false;
   function send(patch) {
@@ -108,16 +150,25 @@
     else api.command('openControlCenter'); // pick a city there first
   });
   for (const button of $$('[data-command]')) {
-    button.addEventListener('click', () => api.command(button.dataset.command));
+    button.addEventListener('click', () => {
+      api.command(button.dataset.command);
+      // A taste of it right here in the panel, too.
+      const toy = button.dataset.command;
+      if (toy === 'snowman') engine.buildSnowman({ x: 40 + Math.random() * (engine.width - 80), y: engine.height - 6 });
+      else if (toy === 'snowball') engine.throwSnowball(null);
+      else if (toy === 'gust') engine.gust();
+      else if (toy === 'thunder') engine.thunder();
+      else if (toy === 'sweep') engine.clearAll();
+    });
   }
-  for (const button of $$('[data-media]')) {
-    button.addEventListener('click', () => api.command('media', button.dataset.media));
-  }
+  for (const button of $$('[data-media]')) button.addEventListener('click', () => api.command('media', button.dataset.media));
+  $('#go-tab').addEventListener('click', () => api.command('media', 'show'));
+  $('#play').addEventListener('click', () => api.command('play'));
   $('#pause').addEventListener('click', () => api.command('togglePause'));
   $('#open-control').addEventListener('click', () => api.command('openControlCenter'));
   $('#quit').addEventListener('click', () => api.command('quit'));
 
-  // Replay the slide-in each time the panel opens.
+  // Everything pops in each time the panel opens.
   function enter() {
     const panel = $('#panel');
     panel.classList.remove('enter');
@@ -134,29 +185,15 @@
 
   function createPreviewApi() {
     const listeners = [];
-    let settings = {
-      paused: false,
-      mode: 'manual',
-      weather: 'snow',
-      intensity: 0.45,
-      location: { name: 'Reykjavík', country: 'Iceland', latitude: 64.1, longitude: -21.9 },
-      soundOn: true,
-      soundMaster: 0.6,
-      soundRain: 0.7,
-      soundWind: 0.5,
-      soundFire: 0.4,
-      soundThunder: 0.8,
-      soundMatch: true,
-      nowPlaying: true,
-    };
-    let playing = true;
+    let settings = { paused: false, mode: 'manual', weather: 'snow', intensity: 0.5, location: { name: 'San Jose' }, soundOn: true, soundMaster: 0.6, nowPlaying: true };
+    let playMode = false;
     const build = () => ({
       preview: true,
       settings,
-      scene: { weather: settings.mode === 'live' ? 'snow' : settings.weather, live: settings.mode === 'live' },
-      paused: settings.paused,
-      weather: { location: settings.location, temperature: -2.4 },
-      nowPlaying: { player: 'Music', state: playing ? 'playing' : 'paused', title: 'Snowfall', artist: 'Øneheart & reidenshi' },
+      scene: { weather: settings.mode === 'live' ? 'rain' : settings.weather, intensity: settings.intensity, live: settings.mode === 'live' },
+      weather: { location: settings.location, temperature: 73 },
+      nowPlaying: { kind: 'browser', source: 'YouTube', app: 'Brave Browser', title: 'Tum Hi Ho', artist: 'Arijit Singh', playing: null },
+      playMode,
       platform: 'darwin',
     });
     const emit = () => listeners.forEach((listener) => listener(build()));
@@ -166,9 +203,9 @@
         settings = { ...settings, ...patch };
         return build();
       },
-      command: async (name, arg) => {
+      command: async (name) => {
         if (name === 'togglePause') settings = { ...settings, paused: !settings.paused };
-        if (name === 'media' && arg === 'playpause') playing = !playing;
+        if (name === 'play') playMode = !playMode;
         emit();
         return true;
       },

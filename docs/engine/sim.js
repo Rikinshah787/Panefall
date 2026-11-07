@@ -362,6 +362,58 @@
       this.emit('thunder');
     }
 
+    /**
+     * Play mode: the pointer sweeps through the weather at (x, y), moving by (dx, dy): snow is
+     * brushed off the ledges, leaves fly, raindrops are wiped off the glass, snowmen fall over.
+     */
+    brush(x, y, dx, dy) {
+      const R = 22;
+      for (const s of this.surfaces.values()) {
+        if (x < s.x - R || x > s.x + s.w + R) continue;
+        const top = s.y - s.heightAt(clamp(x, s.x, s.x + s.w - 1));
+        if (y < top - R || y > s.y + 10) continue; // only right at the ledge
+        let moved = 0;
+        const c1 = Math.min(s.n, s.col(x + R) + 1);
+        for (let c = Math.max(0, s.col(x - R)); c < c1; c++) {
+          if (!s.vis[c] || s.h[c] < 0.1) continue;
+          const take = s.h[c] * 0.6;
+          s.h[c] -= take;
+          moved += take;
+        }
+        if (moved > 0) {
+          s.dirty = true;
+          const puffs = Math.min(16, 2 + moved * 0.5);
+          for (let i = 0; i < puffs; i++) this.addSpray(x + rand(-R, R), top - rand(0, 6), dx * rand(8, 22) + rand(-40, 40), -rand(60, 220) + dy * 6);
+        }
+        for (let i = s.items.length - 1; i >= 0; i--) {
+          if (Math.abs(s.x + s.items[i].ox - x) > R) continue;
+          const [it] = s.items.splice(i, 1);
+          this.liftItem(s, it, dx * 25 + rand(-30, 30), -rand(60, 170));
+        }
+      }
+      for (const b of this.beads) {
+        const r = this.rectByKey.get(b.key);
+        if (r && Math.hypot(r.x + b.ox - x, r.y + b.oy - y) < R + b.r) {
+          b.dead = true;
+          if (Math.random() < 0.5) this.dropFromGlass(r, b);
+        }
+      }
+      this.beads = this.beads.filter((b) => !b.dead);
+      if (Math.hypot(dx, dy) > 5) {
+        for (const m of [...this.snowmen]) {
+          const mx = m.surface.x + m.ox;
+          const my = m.surface.y - 24 * m.scale;
+          if (Math.abs(mx - x) < 18 && Math.abs(my - y) < 40) this.toppleSnowman(m, dx * 40);
+        }
+      }
+    }
+
+    /** Play mode: a snowball flung from (x, y) at (vx, vy) px/s. */
+    throwFrom(x, y, vx, vy) {
+      if (this.particles.length >= MAX_PARTICLES) return;
+      this.particles.push({ kind: BALL, x, y, px: x, py: y, vx: clamp(vx, -1800, 1800), vy: clamp(vy, -1800, 1800), r: 6, vol: 70, flight: 0, target: null, skip: null });
+    }
+
     /** Where a snowman built at (x, y) would stand. */
     surfaceAt(x, y) {
       const glass = this.glassAt(x, y);

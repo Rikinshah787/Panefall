@@ -12,7 +12,7 @@
 
 <p align="center">
   <a href="https://github.com/Rikinshah787/Panefall/releases/latest"><b>Download for macOS</b></a> ·
-  <a href="https://rikinshah787.github.io/Panefall/">Website &amp; live demo</a> ·
+  <a href="https://panefall.vercel.app">Website &amp; live demo</a> ·
   <a href="#build-from-source">Build from source</a> ·
   <a href="CONTRIBUTING.md">Contribute</a>
 </p>
@@ -40,11 +40,12 @@ Panefall puts weather on top of your desktop and lets it *interact with your win
 | ⛈ **Storm** | Heavier rain, gusty wind and soft lightning, with thunder rolling in a moment later if sound is on. |
 | 🍂 **Leaves** & 🌸 **Blossoms** | Tumble down, settle along your windows and blow away when the wind picks up. |
 | 📍 **Live weather** | Follows the real weather in your city: rain when it rains there, snow when it snows, leaning with the real wind. |
+| 🧤 **Play mode** | <kbd>⌃⌥H</kbd> and your mouse reaches into the weather: drag to sweep snow off a window or wipe raindrops off the glass, flick to throw snowballs, double-click for a snowman. <kbd>esc</kbd> and you're back to work. |
 | ☂️ **Umbrella cursor** | Rain and snow part around your mouse pointer and drip off the edges. |
 | ☃️ **Snowmen** | <kbd>⌃⌥M</kbd> and one rolls itself up under your pointer. It waves when you come near, watches your mouse, melts in the rain, and tumbles off if you move its window. |
 | ❄️ **Snowballs** | <kbd>⌃⌥B</kbd> throws one at the window under your pointer. It splats on the glass and slides down. |
 | 🎧 **Sounds** | Rain, wind, thunder and a crackling fireplace, generated live so they never loop, and able to follow the weather on screen. |
-| 🎵 **Now playing** | Play, pause and skip Apple Music or Spotify from the Quick Panel. |
+| 🎵 **Your music, any app** | What's playing on YouTube, YouTube Music, Spotify, SoundCloud, JioSaavn… in Chrome, Brave, Edge, Arc or Safari (one click jumps to the tab), or in Music and Spotify (play, pause, skip). |
 
 <p align="center">
   <img src="docs/assets/snowman.gif" width="720" alt="A snowman builds itself on a window, waves at the pointer, a snowball splats on another window, then the window is dragged and the snowman tumbles off" />
@@ -58,11 +59,13 @@ Panefall puts weather on top of your desktop and lets it *interact with your win
 
 <img src="docs/assets/quick-panel.png" width="260" align="right" alt="The Quick Panel: weather, toys, ambient sounds and now playing" />
 
-**Quick Panel:** click the menu-bar icon, or press <kbd>⌃⌥S</kbd>. A panel slides in from the edge of the screen with:
-- the weather (or follow the real weather)
-- toys: snowman, snowball, gust, thunder, snowplow, sweep
-- the ambient sound mixer
-- what's playing in Apple Music or Spotify
+**Quick Panel:** click the menu-bar icon, or press <kbd>⌃⌥S</kbd>. A little card pops in at the side of the screen with:
+- a tiny live weather scene, and a snowman who waves back at you
+- weather bubbles, or follow the real weather
+- the **Play with the weather** button
+- toys: snowman, snowball, gust, thunder, sweep
+- the song that's playing
+- cozy sounds
 
 Click anywhere else and it tucks itself away. Right-click the menu-bar icon for the classic menu.
 
@@ -90,6 +93,7 @@ Click anywhere else and it tucks itself away. Right-click the menu-bar icon for 
 | Shortcut | What it does |
 | --- | --- |
 | <kbd>⌃⌥S</kbd> | Open the Quick Panel |
+| <kbd>⌃⌥H</kbd> | Play with the weather (<kbd>esc</kbd> to stop) |
 | <kbd>⌃⌥M</kbd> | Build a snowman under the pointer |
 | <kbd>⌃⌥B</kbd> | Throw a snowball at the window under the pointer |
 | <kbd>⌃⌥W</kbd> | Pause or resume the weather |
@@ -112,7 +116,7 @@ Requires macOS 11 (Big Sur) or later on Apple silicon. Windows support is in pro
 
 - **No permissions are needed** for weather to collect on your windows. macOS shares window positions and sizes freely. Panefall never records your screen and never sees what is inside a window.
 - **Accessibility (optional):** macOS only reveals the Dock's exact size to apps with this permission. Grant it if you want snow and leaves on the Dock. The Control Center has an **Allow…** button for it.
-- **Automation (optional):** the first time the Quick Panel shows what's playing, macOS asks whether Panefall may control Music or Spotify. Panefall only talks to a player that is already running, and never opens one.
+- **Automation (optional):** to show what's playing, macOS asks once per app whether Panefall may read it (Music, Spotify, or your browser's tab titles). Panefall only talks to apps that are already running, never opens one, and only looks for music tabs.
 - **Network:** with live weather on, Panefall asks [Open-Meteo](https://open-meteo.com/) for the weather at the place you picked (its latitude and longitude), and sends the place names you type into the search box. Nothing else leaves your computer: no account, no analytics, no tracking.
 
 ## Build from source
