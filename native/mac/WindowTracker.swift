@@ -105,6 +105,12 @@ func pressMediaKey(_ key: Int) {
 DispatchQueue.global(qos: .utility).async {
     let keys = ["playpause": 16, "next": 17, "previous": 18] // NX_KEYTYPE_PLAY / NEXT / PREVIOUS
     while let line = readLine() {
+        if line.hasPrefix("wallpaper ") {
+            // Set a Panefall wallpaper as the desktop picture on every screen.
+            let url = URL(fileURLWithPath: String(line.dropFirst("wallpaper ".count)))
+            for screen in NSScreen.screens { try? NSWorkspace.shared.setDesktopImageURL(url, for: screen, options: [:]) }
+            continue
+        }
         let parts = line.split(separator: " ")
         if parts.count == 2, parts[0] == "media", let key = keys[String(parts[1])], AXIsProcessTrusted() {
             pressMediaKey(key)

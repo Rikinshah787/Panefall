@@ -47,6 +47,13 @@ class MacWindowTracker extends EventEmitter {
     return true;
   }
 
+  /** Ask the helper to set an image file as the desktop picture on every screen. */
+  setWallpaper(file) {
+    if (!this.child) return false;
+    this.child.stdin.write(`wallpaper ${file}\n`);
+    return true;
+  }
+
   /** Restart the helper, e.g. after Accessibility was granted. */
   restart() {
     if (!this.running) return;

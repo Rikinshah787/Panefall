@@ -166,6 +166,16 @@
         ground.h[c] = 0;
       }
       if (scooped > 0) ground.dirty = true;
+
+      // Snowmen standing on the ground get bulldozed: they tumble ahead of the blade.
+      for (const m of [...snow.snowmen]) {
+        if (m.surface !== ground) continue;
+        const mx = ground.x + m.ox;
+        if (mx >= Math.min(before, after) - 12 && mx <= Math.max(before, after) + 12) {
+          snow.toppleSnowman(m, run.dir * 900);
+          for (let i = 0; i < 12; i++) snow.addSpray(mx, snow.height - rand(10, 40), run.dir * rand(60, 220), -rand(80, 260));
+        }
+      }
       run.mound += scooped;
 
       const overflow = Math.max(0, run.mound - MOUND_MAX);

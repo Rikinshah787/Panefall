@@ -266,6 +266,25 @@
     button.addEventListener('click', () => send({ mode: 'manual', weather: button.dataset.weather, paused: false }));
   }
 
+  // ------------------------------------------------------------ wallpapers
+
+  if (window.PanefallWallpapers) {
+    for (const { id, name } of window.PanefallWallpapers.list) {
+      const button = el('button');
+      button.type = 'button';
+      const thumb = window.PanefallWallpapers.draw(document.createElement('canvas'), id, 320, 200);
+      button.append(thumb, el('span', '', name));
+      button.addEventListener('click', () => {
+        // Paint it at the screen's full resolution, then hand it to the app to set.
+        const scale = window.devicePixelRatio || 1;
+        const full = window.PanefallWallpapers.draw(document.createElement('canvas'), id, Math.round(screen.width * scale), Math.round(screen.height * scale));
+        api.command('setWallpaper', { id, data: full.toDataURL('image/jpeg', 0.92) });
+        $('#wall-note').textContent = `${name} is now your wallpaper ✓`;
+      });
+      $('#walls').append(button);
+    }
+  }
+
   // ------------------------------------------------------------ place search
 
   const placeInput = $('#place');

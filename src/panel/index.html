@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="panel.css" />
   </head>
   <body>
+    <button type="button" class="tuck" id="tuck" title="Tuck the panel away (a small tab stays at the edge)">›</button>
+    <button type="button" class="edge-tab" id="edge-tab" title="Open Panefall">‹<span>❄️</span></button>
     <div class="panel" id="panel">
       <!-- A tiny live scene: the real weather engine, a little window and a snowman friend. -->
       <div class="scene part" id="scene">
@@ -15,7 +17,8 @@
         <canvas id="scene-canvas"></canvas>
         <span class="chip" id="place">Panefall</span>
         <button type="button" class="pause" id="pause" title="Pause or resume the weather (⌃⌥W)">⏸</button>
-        <button type="button" class="close" id="close" title="Hide this panel (⌃⌥S)">✕</button>
+        <button type="button" class="close" id="close" title="Close the panel (⌃⌥S)">✕</button>
+        <button type="button" class="side" id="tuck-top" title="Tuck it to the side (a little tab stays at the edge)">›</button>
       </div>
 
       <div class="weather part">

@@ -170,6 +170,7 @@ function fullState() {
     canOpenAtLogin: app.isPackaged,
     shortcuts: shortcutStatus,
     nowPlaying: nowPlayingInfo,
+    panelCollapsed,
     playMode,
     platform: process.platform,
     version: app.getVersion(),
@@ -242,7 +243,10 @@ function update(patch) {
   if (settings.overFullscreen !== prev.overFullscreen) for (const win of overlays.values()) setFullscreenVisibility(win);
   if (settings.showInDock !== prev.showInDock) applyDockVisibility();
   if (settings.shortcuts !== prev.shortcuts) registerShortcuts();
-  if (prev.quickPanel && !settings.quickPanel) hidePanel();
+  if (prev.quickPanel && !settings.quickPanel) {
+    hidePanel();
+    hideEdgeTab();
+  }
   if (settings.location !== prev.location || settings.units !== prev.units) {
     weatherData = null;
     weatherError = null;
@@ -268,7 +272,23 @@ const COMMANDS = {
   thunder: () => broadcast('panefall:command', { name: 'thunder' }),
   togglePanel: () => togglePanel(),
   play: () => setPlayMode(!playMode),
-  hidePanel: () => hidePanel(),
+  hidePanel: () => {
+    hidePanel();
+    hideEdgeTab();
+  },
+  collapsePanel: () => showEdgeTab(),
+  // A wallpaper painted by the Control Center arrives as a JPEG data URL; save it and set it.
+  setWallpaper: (arg) => {
+    const fs = require('fs');
+    if (!arg || !/^[a-z-]+$/.test(arg.id) || typeof arg.data !== 'string' || !arg.data.startsWith('data:image/jpeg;base64,')) return;
+    const dir = path.join(app.getPath('userData'), 'wallpapers');
+    fs.mkdirSync(dir, { recursive: true });
+    for (const old of fs.readdirSync(dir)) fs.rmSync(path.join(dir, old), { force: true });
+    const file = path.join(dir, `${arg.id}-${Date.now()}.jpg`); // a new name, so macOS doesn't reuse a cached picture
+    fs.writeFileSync(file, Buffer.from(arg.data.slice('data:image/jpeg;base64,'.length), 'base64'));
+    if (tracker) tracker.setWallpaper(file);
+  },
+  expandPanel: () => showPanel(),
   media: async (action) => {
     const current = nowPlayingInfo;
     if (action === 'show' || (current && current.kind === 'player')) {
@@ -458,6 +478,7 @@ function openControlCenter() {
 /** A slim panel at the right edge of the screen: weather, toys, sounds and music. */
 function togglePanel() {
   if (!settings.quickPanel) return openControlCenter(); // the side panel is switched off in Settings
+  if (panelCollapsed) return showPanel(); // slide back out from the edge tab
   if (panel && !panel.isDestroyed() && panel.isVisible()) return hidePanel();
   // A click on the menu-bar icon blurs (and so hides) the panel first; don't reopen it.
   if (Date.now() - panelHiddenAt < 250) return undefined;
@@ -499,7 +520,7 @@ function showPanel() {
     panel.loadFile(path.join(__dirname, '..', 'panel', 'index.html'));
     // It tucks itself away when you click elsewhere (except while debugging, so it can be captured).
     panel.on('blur', () => {
-      if (!process.env.PANEFALL_DEBUG_DIR) hidePanel();
+      if (!process.env.PANEFALL_DEBUG_DIR && !panelCollapsed) hidePanel();
     });
     panel.on('closed', () => {
       panel = null;
@@ -514,7 +535,26 @@ function showPanel() {
   panel.setBounds(bounds);
 }
 
+// Tucked away with its › arrow, the panel shrinks into a little ‹ tab at the screen edge;
+// clicking the tab slides it back out. (It stays put when you click elsewhere.)
+let panelCollapsed = false;
+
+function showEdgeTab() {
+  if (!panel || panel.isDestroyed()) return;
+  const area = screen.getDisplayMatching(panel.getBounds()).workArea;
+  panelCollapsed = true;
+  panel.setBounds({ x: area.x + area.width - 30, y: Math.round(area.y + area.height / 2 - 44), width: 30, height: 88 });
+  if (!panel.isVisible()) panel.showInactive();
+  panel.webContents.send('panefall:state', fullState());
+  stopMediaPolling();
+}
+
+function hideEdgeTab() {
+  panelCollapsed = false;
+}
+
 function revealPanel() {
+  hideEdgeTab();
   panel.show();
   panel.focus();
   panel.webContents.send('panefall:panel-shown');
@@ -523,6 +563,7 @@ function revealPanel() {
 }
 
 function hidePanel() {
+  panelCollapsed = false;
   if (!panel || panel.isDestroyed() || !panel.isVisible()) return;
   panel.hide();
   panelHiddenAt = Date.now();
@@ -709,6 +750,7 @@ function startDebugSnapshots(dir) {
     COMMANDS.snowman();
     COMMANDS.snowball();
   }, 4000);
+  setTimeout(() => COMMANDS.collapsePanel(), 13000); // then tuck it away to its edge tab
   setInterval(async () => {
     const targets = [...overlays].map(([id, win]) => [`overlay-${id}`, win]);
     if (control && !control.isDestroyed()) targets.push(['control', control]);

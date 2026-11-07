@@ -46,7 +46,40 @@ button {
   flex-direction: column;
   gap: 10px;
   height: 100%;
-  padding: 12px;
+  padding: 12px 12px 12px 20px;
+}
+
+/* The › handle on the left edge: tucks the panel away to the side of the screen. */
+.tuck {
+  position: fixed;
+  left: 3px;
+  top: 50%;
+  z-index: 5;
+  width: 13px;
+  height: 64px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--muted);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1;
+  transform: translateY(-50%);
+  transition: background 0.15s ease, color 0.15s ease, width 0.15s ease;
+}
+
+.tuck:hover {
+  width: 16px;
+  background: var(--pink);
+  color: #2a1640;
+}
+
+body.leaving .panel,
+body.leaving .tuck {
+  transform: translateX(110%);
+  opacity: 0;
+  transition: transform 0.24s ease-in, opacity 0.24s ease-in;
 }
 
 /* ---------------------------------------------------------------- the live scene */
@@ -129,9 +162,63 @@ button {
   transform: scale(1.12) rotate(90deg);
 }
 
-.pause {
+.side {
   position: absolute;
   right: 46px;
+  top: 8px;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(10, 12, 40, 0.5);
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+  transition: transform 0.15s cubic-bezier(0.3, 1.6, 0.5, 1), background 0.15s ease;
+}
+
+.side:hover {
+  background: var(--lilac);
+  transform: translateX(3px) scale(1.1);
+}
+
+/* Tucked away: the window shrinks to a little tab at the screen edge. */
+.edge-tab {
+  display: none;
+  position: fixed;
+  inset: 0;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+  border: 0;
+  background: linear-gradient(170deg, #2a3170, #4a3277);
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.edge-tab span {
+  font-size: 13px;
+}
+
+.edge-tab:hover {
+  background: linear-gradient(170deg, var(--lilac), var(--pink));
+  color: #2a1640;
+}
+
+body.collapsed .edge-tab {
+  display: grid;
+}
+
+body.collapsed .panel,
+body.collapsed .tuck {
+  display: none;
+}
+
+.pause {
+  position: absolute;
+  right: 82px;
   top: 8px;
   z-index: 2;
   width: 30px;

@@ -63,6 +63,8 @@
     if (!next) return;
     state = next;
     const s = state.settings;
+    document.body.classList.toggle('collapsed', Boolean(state.panelCollapsed));
+    if (state.panelCollapsed) document.body.classList.remove('leaving');
 
     $('#pause').textContent = s.paused ? '▶️' : '⏸';
     $('#place').textContent = state.weather ? `${state.weather.location.name} · ${Math.round(state.weather.temperature)}°` : 'Panefall';
@@ -170,6 +172,13 @@
   $('#go-tab').addEventListener('click', () => api.command('media', 'show'));
   $('#enable-keys').addEventListener('click', () => api.command('enableMediaKeys'));
   $('#close').addEventListener('click', () => api.command('hidePanel'));
+  const tuck = () => {
+    document.body.classList.add('leaving'); // slide away, then leave a little tab at the edge
+    setTimeout(() => api.command('collapsePanel'), 220);
+  };
+  $('#tuck').addEventListener('click', tuck);
+  $('#tuck-top').addEventListener('click', tuck);
+  $('#edge-tab').addEventListener('click', () => api.command('expandPanel'));
   $('#play').addEventListener('click', () => api.command('play'));
   $('#pause').addEventListener('click', () => api.command('togglePause'));
   $('#open-control').addEventListener('click', () => api.command('openControlCenter'));
@@ -177,6 +186,7 @@
 
   // Everything pops in each time the panel opens.
   function enter() {
+    document.body.classList.remove('leaving');
     const panel = $('#panel');
     panel.classList.remove('enter');
     void panel.offsetWidth;
