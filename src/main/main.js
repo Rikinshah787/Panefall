@@ -242,6 +242,7 @@ function update(patch) {
   if (settings.overFullscreen !== prev.overFullscreen) for (const win of overlays.values()) setFullscreenVisibility(win);
   if (settings.showInDock !== prev.showInDock) applyDockVisibility();
   if (settings.shortcuts !== prev.shortcuts) registerShortcuts();
+  if (prev.quickPanel && !settings.quickPanel) hidePanel();
   if (settings.location !== prev.location || settings.units !== prev.units) {
     weatherData = null;
     weatherError = null;
@@ -267,9 +268,21 @@ const COMMANDS = {
   thunder: () => broadcast('panefall:command', { name: 'thunder' }),
   togglePanel: () => togglePanel(),
   play: () => setPlayMode(!playMode),
+  hidePanel: () => hidePanel(),
   media: async (action) => {
-    await media.control(action, nowPlayingInfo);
-    setTimeout(pollNowPlaying, 300);
+    const current = nowPlayingInfo;
+    if (action === 'show' || (current && current.kind === 'player')) {
+      await media.control(action, current); // Music / Spotify directly, or jump to the browser tab
+    } else if (settings.mediaKeys && tracker) {
+      // Browser music: press the Mac's own media keys, which Brave, Chrome and Safari obey.
+      if (systemPreferences.isTrustedAccessibilityClient(false)) tracker.pressMediaKey(action);
+      else requestAccessibility();
+    }
+    setTimeout(pollNowPlaying, 400);
+  },
+  enableMediaKeys: () => {
+    update({ mediaKeys: true });
+    if (isMac && !systemPreferences.isTrustedAccessibilityClient(false)) requestAccessibility();
   },
   refreshWeather: () => weather.refresh(),
   requestAccessibility: () => requestAccessibility(),
@@ -444,6 +457,7 @@ function openControlCenter() {
 
 /** A slim panel at the right edge of the screen: weather, toys, sounds and music. */
 function togglePanel() {
+  if (!settings.quickPanel) return openControlCenter(); // the side panel is switched off in Settings
   if (panel && !panel.isDestroyed() && panel.isVisible()) return hidePanel();
   // A click on the menu-bar icon blurs (and so hides) the panel first; don't reopen it.
   if (Date.now() - panelHiddenAt < 250) return undefined;
@@ -623,7 +637,7 @@ function createTray() {
   tray = new Tray(nativeImage.createFromPath(path.join(ROOT, 'assets', 'trayTemplate.png')));
   tray.setToolTip('Panefall');
   // Click: the Quick Panel. Right-click (or Control-click): the menu.
-  tray.on('click', () => togglePanel());
+  tray.on('click', () => (settings.quickPanel ? togglePanel() : tray.popUpContextMenu(trayMenu)));
   tray.on('right-click', () => tray.popUpContextMenu(trayMenu));
   updateTray();
 }

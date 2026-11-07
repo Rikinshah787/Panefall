@@ -109,9 +109,29 @@ button {
   font-size: 12px;
 }
 
-.pause {
+.close {
   position: absolute;
   right: 10px;
+  top: 8px;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(10, 12, 40, 0.5);
+  font-size: 13px;
+  font-weight: 800;
+  transition: transform 0.15s cubic-bezier(0.3, 1.6, 0.5, 1), background 0.15s ease;
+}
+
+.close:hover {
+  background: var(--pink);
+  transform: scale(1.12) rotate(90deg);
+}
+
+.pause {
+  position: absolute;
+  right: 46px;
   top: 8px;
   z-index: 2;
   width: 30px;
@@ -458,12 +478,25 @@ input[type='range']:disabled {
   background: #fff;
 }
 
+.browser-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 6px;
+}
+
 .go {
+  flex: 1;
   height: 32px;
   border: 0;
   border-radius: 999px;
   background: var(--bubble);
   font-weight: 700;
+  font-size: 12px;
+}
+
+.go.accent {
+  background: linear-gradient(90deg, var(--lilac), var(--pink));
+  color: #2a1640;
 }
 
 .go:hover {

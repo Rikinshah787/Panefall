@@ -96,9 +96,14 @@
     $('#track-title').textContent = np ? np.title : 'Nothing playing';
     $('#track-artist').textContent = np ? np.artist || np.source : 'Play music in an app or a browser tab';
     $('#track-source').textContent = np ? (np.kind === 'browser' ? `${np.source} · ${np.app.replace(' Browser', '')}` : np.source) : '';
-    $('#transport').hidden = Boolean(np && np.kind === 'browser');
-    $('#go-tab').hidden = !(np && np.kind === 'browser');
-    $('#playpause').textContent = np && np.playing ? '⏸' : '▶️';
+    // Browser music: play/pause/skip works through the media keys once the user turns it on.
+    const browser = Boolean(np && np.kind === 'browser');
+    const canControl = !browser || (state.settings.mediaKeys && state.accessibility);
+    $('#transport').hidden = !np || !canControl;
+    $('#browser-actions').hidden = !browser;
+    $('#enable-keys').hidden = !browser || canControl;
+    $('#enable-keys').textContent = state.settings.mediaKeys ? '🔓 Allow control…' : '🎛 Control it from here';
+    $('#playpause').textContent = browser ? '⏯' : np && np.playing ? '⏸' : '▶️';
   }
 
   function paintSliders() {
@@ -163,6 +168,8 @@
   }
   for (const button of $$('[data-media]')) button.addEventListener('click', () => api.command('media', button.dataset.media));
   $('#go-tab').addEventListener('click', () => api.command('media', 'show'));
+  $('#enable-keys').addEventListener('click', () => api.command('enableMediaKeys'));
+  $('#close').addEventListener('click', () => api.command('hidePanel'));
   $('#play').addEventListener('click', () => api.command('play'));
   $('#pause').addEventListener('click', () => api.command('togglePause'));
   $('#open-control').addEventListener('click', () => api.command('openControlCenter'));

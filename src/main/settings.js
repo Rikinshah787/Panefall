@@ -37,7 +37,9 @@ const DEFAULTS = Object.freeze({
   soundFire: 0,
   soundThunder: 0.8,
   soundMatch: true, // rain only while it rains, wind follows the gusts
-  nowPlaying: true, // show and control Apple Music / Spotify in the Quick Panel
+  nowPlaying: true, // show the song that's playing in the Quick Panel
+  mediaKeys: false, // control browser music (Brave, Chrome, Safari…) with the media keys; needs Accessibility
+  quickPanel: true, // clicking the menu-bar icon opens the Quick Panel (off: it shows the menu)
 });
 
 const bool = (v) => (typeof v === 'boolean' ? v : undefined);
@@ -87,6 +89,8 @@ const SCHEMA = {
   soundThunder: range(0, 1),
   soundMatch: bool,
   nowPlaying: bool,
+  mediaKeys: bool,
+  quickPanel: bool,
 };
 
 /** Keeps only known keys with valid values (numbers are clamped into range). */

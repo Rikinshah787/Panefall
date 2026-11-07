@@ -14,7 +14,8 @@
         <div class="scene-win"><i></i><i></i><i></i></div>
         <canvas id="scene-canvas"></canvas>
         <span class="chip" id="place">Panefall</span>
-        <button type="button" class="pause" id="pause" title="Pause or resume (⌃⌥W)">⏸</button>
+        <button type="button" class="pause" id="pause" title="Pause or resume the weather (⌃⌥W)">⏸</button>
+        <button type="button" class="close" id="close" title="Hide this panel (⌃⌥S)">✕</button>
       </div>
 
       <div class="weather part">
@@ -52,7 +53,10 @@
           <button type="button" data-media="playpause" class="big" id="playpause" title="Play or pause">⏯</button>
           <button type="button" data-media="next" title="Next">⏭</button>
         </div>
-        <button type="button" class="go" id="go-tab" hidden>Go to tab ↗</button>
+        <div class="browser-actions" id="browser-actions" hidden>
+          <button type="button" class="go" id="go-tab">Go to tab ↗</button>
+          <button type="button" class="go accent" id="enable-keys">🎛 Control it from here</button>
+        </div>
       </div>
 
       <label class="cozy part">

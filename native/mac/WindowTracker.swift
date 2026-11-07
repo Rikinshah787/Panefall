@@ -87,9 +87,29 @@ func dockFrame() -> [Int]? {
     return nil
 }
 
-// Exit when the parent closes our stdin (normal quit) or dies (re-parented to launchd).
+/// Presses a media key (play/pause, next, previous) like the keyboard's own keys, so whatever
+/// is playing responds: a YouTube tab in Brave or Chrome, Safari, Spotify, Music…
+/// macOS only delivers it if Panefall has the Accessibility permission (the user opts in).
+func pressMediaKey(_ key: Int) {
+    for down in [true, false] {
+        let flags = NSEvent.ModifierFlags(rawValue: down ? 0xA00 : 0xB00)
+        let data1 = (key << 16) | ((down ? 0xA : 0xB) << 8)
+        let event = NSEvent.otherEvent(with: .systemDefined, location: .zero, modifierFlags: flags, timestamp: 0,
+                                       windowNumber: 0, context: nil, subtype: 8, data1: data1, data2: -1)
+        event?.cgEvent?.post(tap: .cghidEventTap)
+    }
+}
+
+// Commands from Panefall arrive on stdin ("media playpause|next|previous"). When the parent
+// closes stdin (normal quit) or dies (re-parented to launchd), exit.
 DispatchQueue.global(qos: .utility).async {
-    while readLine() != nil {}
+    let keys = ["playpause": 16, "next": 17, "previous": 18] // NX_KEYTYPE_PLAY / NEXT / PREVIOUS
+    while let line = readLine() {
+        let parts = line.split(separator: " ")
+        if parts.count == 2, parts[0] == "media", let key = keys[String(parts[1])], AXIsProcessTrusted() {
+            pressMediaKey(key)
+        }
+    }
     exit(0)
 }
 

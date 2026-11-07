@@ -130,6 +130,10 @@
               <span><b>Keyboard shortcuts</b><small>Control Panefall from any app</small></span>
               <input type="checkbox" data-setting="shortcuts" />
             </label>
+            <label class="toggle">
+              <span><b>Quick Panel</b><small>Clicking the menu-bar icon opens the side panel (off: it shows the menu)</small></span>
+              <input type="checkbox" data-setting="quickPanel" />
+            </label>
             <label class="toggle" id="dock-icon-row">
               <span><b>Show in the Dock</b><small>Otherwise Panefall lives in the menu bar</small></span>
               <input type="checkbox" data-setting="showInDock" />
@@ -179,6 +183,11 @@
             <span><b>Now playing in the Quick Panel</b><small>The song from Music, Spotify or a browser tab (YouTube, Spotify, SoundCloud…)</small></span>
             <input type="checkbox" data-setting="nowPlaying" />
           </label>
+          <div class="toggle" id="media-keys-row">
+            <span><b>Control browser music</b><small id="media-keys-note">Play, pause and skip Brave, Chrome or Safari from the panel, using the Mac's media keys</small></span>
+            <button id="media-keys-allow" class="button small" type="button" hidden>Allow…</button>
+            <input type="checkbox" data-setting="mediaKeys" aria-label="Control browser music" />
+          </div>
         </section>
 
         <section class="card">

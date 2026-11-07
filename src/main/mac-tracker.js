@@ -40,6 +40,13 @@ class MacWindowTracker extends EventEmitter {
     }
   }
 
+  /** Ask the helper to press a media key: 'playpause' | 'next' | 'previous'. */
+  pressMediaKey(action) {
+    if (!this.child || !['playpause', 'next', 'previous'].includes(action)) return false;
+    this.child.stdin.write(`media ${action}\n`);
+    return true;
+  }
+
   /** Restart the helper, e.g. after Accessibility was granted. */
   restart() {
     if (!this.running) return;

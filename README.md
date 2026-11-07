@@ -45,7 +45,7 @@ Panefall puts weather on top of your desktop and lets it *interact with your win
 | ☃️ **Snowmen** | <kbd>⌃⌥M</kbd> and one rolls itself up under your pointer. It waves when you come near, watches your mouse, melts in the rain, and tumbles off if you move its window. |
 | ❄️ **Snowballs** | <kbd>⌃⌥B</kbd> throws one at the window under your pointer. It splats on the glass and slides down. |
 | 🎧 **Sounds** | Rain, wind, thunder and a crackling fireplace, generated live so they never loop, and able to follow the weather on screen. |
-| 🎵 **Your music, any app** | What's playing on YouTube, YouTube Music, Spotify, SoundCloud, JioSaavn… in Chrome, Brave, Edge, Arc or Safari (one click jumps to the tab), or in Music and Spotify (play, pause, skip). |
+| 🎵 **Your music, any app** | What's playing on YouTube, YouTube Music, Spotify, SoundCloud, JioSaavn… in Chrome, Brave, Edge, Arc or Safari, or in Music and Spotify, with play, pause and skip. For browsers, turn on **Control browser music** (it presses the Mac's media keys and needs the Accessibility permission). |
 
 <p align="center">
   <img src="docs/assets/snowman.gif" width="720" alt="A snowman builds itself on a window, waves at the pointer, a snowball splats on another window, then the window is dragged and the snowman tumbles off" />
@@ -67,7 +67,7 @@ Panefall puts weather on top of your desktop and lets it *interact with your win
 - the song that's playing
 - cozy sounds
 
-Click anywhere else and it tucks itself away. Right-click the menu-bar icon for the classic menu.
+Close it with its ✕ button, <kbd>⌃⌥S</kbd>, or by clicking anywhere else. Right-click the menu-bar icon for the classic menu. Prefer just the menu? Turn off **Quick Panel** in Settings.
 
 **Control Center:** everything else, in one window. Open it from the Dock, the panel, or <kbd>⌃⌥O</kbd>.
 - **Weather:** pick one yourself, or search for your city to follow the real weather with an hourly forecast.

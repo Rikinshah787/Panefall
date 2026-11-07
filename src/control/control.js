@@ -111,6 +111,14 @@
       ? 'Needs the Accessibility permission to see the Dock'
       : 'Snow and leaves settle on top of the Dock';
 
+    // Browser music control presses the media keys, which needs Accessibility.
+    const keysNeedPermission = mac && s.mediaKeys && !state.accessibility;
+    $('#media-keys-row').hidden = !mac;
+    $('#media-keys-allow').hidden = !keysNeedPermission;
+    $('#media-keys-note').textContent = keysNeedPermission
+      ? 'Needs the Accessibility permission to press the media keys'
+      : "Play, pause and skip Brave, Chrome or Safari from the panel, using the Mac's media keys";
+
     const login = $('#openAtLogin');
     login.checked = Boolean(state.openAtLogin);
     login.disabled = !state.canOpenAtLogin;
@@ -242,6 +250,11 @@
   $('#snowman').addEventListener('click', () => api.command('snowman'));
   $('#plow').addEventListener('click', () => api.command('plow'));
   $('#dock-allow').addEventListener('click', () => api.command('requestAccessibility'));
+  $('#media-keys-allow').addEventListener('click', () => api.command('requestAccessibility'));
+  // Turning it on asks for the permission right away if it's missing.
+  $('[data-setting="mediaKeys"]').addEventListener('change', (event) => {
+    if (event.target.checked) api.command('enableMediaKeys');
+  });
 
   for (const button of $$('[data-mode]')) {
     button.addEventListener('click', () => {
