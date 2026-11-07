@@ -21,6 +21,7 @@ const {
 const path = require('path');
 const settingsStore = require('./settings');
 const MacWindowTracker = require('./mac-tracker');
+const media = require('./media');
 const { WeatherService, searchPlaces, seasonalWeather } = require('./weather');
 
 const isMac = process.platform === 'darwin';
@@ -42,6 +43,10 @@ let lastAlertAt = 0;
 let shortcutStatus = [];
 let pointerTimer = null;
 let lastPointer = null;
+let panel = null; // the Quick Panel
+let panelHiddenAt = 0;
+let nowPlayingInfo = null;
+let mediaTimer = null;
 const overlays = new Map(); // display id -> BrowserWindow
 const weather = new WeatherService();
 
@@ -65,6 +70,8 @@ if (!app.requestSingleInstanceLock()) {
 function start() {
   settings = settingsStore.load();
   applyDockVisibility();
+  // Running from source (npm start) the Dock would otherwise show Electron's icon.
+  if (isMac && !app.isPackaged) app.dock.setIcon(path.join(ROOT, 'assets', 'icon.png'));
   createTray();
   syncOverlays();
   for (const event of ['display-added', 'display-removed', 'display-metrics-changed']) {
@@ -162,9 +169,27 @@ function fullState() {
     openAtLogin: app.getLoginItemSettings().openAtLogin,
     canOpenAtLogin: app.isPackaged,
     shortcuts: shortcutStatus,
+    nowPlaying: nowPlayingInfo,
     platform: process.platform,
     version: app.getVersion(),
   };
+}
+
+/** Sound plays from one overlay only: the one on the main display. */
+function sendSound() {
+  const primary = screen.getPrimaryDisplay().id;
+  for (const [id, win] of overlays) {
+    if (win.isDestroyed()) continue;
+    win.webContents.send('panefall:sound', {
+      on: settings.soundOn && !isPaused() && id === primary,
+      master: settings.soundMaster,
+      rain: settings.soundRain,
+      wind: settings.soundWind,
+      fire: settings.soundFire,
+      thunder: settings.soundThunder,
+      match: settings.soundMatch,
+    });
+  }
 }
 
 /** Pushes the current state everywhere: overlays, tracker, Control Center, menu bar. */
@@ -180,7 +205,10 @@ function refresh() {
     if (engine.paused) tracker.stop();
     else tracker.start();
   }
-  if (control && !control.isDestroyed()) control.webContents.send('panefall:state', fullState());
+  const state = fullState();
+  if (control && !control.isDestroyed()) control.webContents.send('panefall:state', state);
+  if (panel && !panel.isDestroyed()) panel.webContents.send('panefall:state', state);
+  sendSound();
   updatePointerTracking();
   updateTray();
 }
@@ -231,6 +259,16 @@ const COMMANDS = {
   },
   sweep: () => broadcast('panefall:command', 'clear'),
   plow: () => broadcast('panefall:command', 'plow'),
+  // Toys. 'pointer' = right where the mouse is; otherwise somewhere sensible on that display.
+  snowman: (where) => toDisplayUnderPointer('snowman', where === 'pointer'),
+  snowball: (where) => toDisplayUnderPointer('snowball', where === 'pointer'),
+  gust: () => broadcast('panefall:command', { name: 'gust' }),
+  thunder: () => broadcast('panefall:command', { name: 'thunder' }),
+  togglePanel: () => togglePanel(),
+  media: async (action) => {
+    await media.control(action);
+    setTimeout(pollNowPlaying, 300);
+  },
   refreshWeather: () => weather.refresh(),
   requestAccessibility: () => requestAccessibility(),
   openAtLogin: (on) => {
@@ -242,6 +280,9 @@ const COMMANDS = {
 };
 
 const SHORTCUTS = [
+  { accelerator: 'Control+Alt+S', label: 'Open the Quick Panel', command: 'togglePanel' },
+  { accelerator: 'Control+Alt+M', label: 'Build a snowman under the pointer', command: 'snowman', arg: 'pointer' },
+  { accelerator: 'Control+Alt+B', label: 'Throw a snowball at the window under the pointer', command: 'snowball', arg: 'pointer' },
   { accelerator: 'Control+Alt+W', label: 'Pause or resume the weather', command: 'togglePause' },
   { accelerator: 'Control+Alt+N', label: 'Switch to the next weather', command: 'nextWeather' },
   { accelerator: 'Control+Alt+K', label: 'Sweep everything away', command: 'sweep' },
@@ -249,13 +290,19 @@ const SHORTCUTS = [
   { accelerator: 'Control+Alt+O', label: 'Open the Control Center', command: 'openControlCenter' },
 ];
 
+function toDisplayUnderPointer(name, atPointer) {
+  const at = screen.getCursorScreenPoint();
+  const display = screen.getDisplayNearestPoint(at);
+  broadcast('panefall:command', { name, displayId: display.id, at: atPointer ? at : null });
+}
+
 function registerShortcuts() {
   globalShortcut.unregisterAll();
-  shortcutStatus = SHORTCUTS.map(({ accelerator, label, command }) => {
+  shortcutStatus = SHORTCUTS.map(({ accelerator, label, command, arg }) => {
     let registered = false;
     if (settings.shortcuts) {
       try {
-        registered = globalShortcut.register(accelerator, () => COMMANDS[command]());
+        registered = globalShortcut.register(accelerator, () => COMMANDS[command](arg));
       } catch {
         registered = false;
       }
@@ -265,8 +312,9 @@ function registerShortcuts() {
 }
 
 function registerIpc() {
-  // Only the Control Center may change settings or run commands.
-  const fromControl = (event) => Boolean(control && !control.isDestroyed() && event.sender === control.webContents);
+  // Only the Control Center and the Quick Panel may change settings or run commands.
+  const isUi = (win, event) => Boolean(win && !win.isDestroyed() && event.sender === win.webContents);
+  const fromControl = (event) => isUi(control, event) || isUi(panel, event);
 
   ipcMain.handle('panefall:getState', (event) => (fromControl(event) ? fullState() : null));
   ipcMain.handle('panefall:update', (event, patch) => {
@@ -364,6 +412,98 @@ function openControlCenter() {
   logPageProblems(control, 'control');
 }
 
+// ---------------------------------------------------------------- Quick Panel
+
+/** A slim panel at the right edge of the screen: weather, toys, sounds and music. */
+function togglePanel() {
+  if (panel && !panel.isDestroyed() && panel.isVisible()) return hidePanel();
+  // A click on the menu-bar icon blurs (and so hides) the panel first; don't reopen it.
+  if (Date.now() - panelHiddenAt < 250) return undefined;
+  return showPanel();
+}
+
+function showPanel() {
+  if (!app.isReady()) return;
+  const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+  const area = display.workArea;
+  const width = 340;
+  const top = 34; // room above it for snow to settle on the panel
+  const bounds = {
+    x: area.x + area.width - width - 12,
+    y: area.y + top,
+    width,
+    height: Math.min(880, area.height - top - 12),
+  };
+  if (!panel || panel.isDestroyed()) {
+    panel = new BrowserWindow({
+      ...bounds,
+      show: false,
+      frame: false,
+      resizable: false,
+      movable: false,
+      minimizable: false,
+      maximizable: false,
+      fullscreenable: false,
+      skipTaskbar: true,
+      alwaysOnTop: true,
+      vibrancy: isMac ? 'popover' : undefined,
+      visualEffectState: isMac ? 'active' : undefined,
+      backgroundColor: isMac ? '#00000000' : '#1b1e27',
+      webPreferences: { preload: PRELOAD, contextIsolation: true, sandbox: true },
+    });
+    panel.setAlwaysOnTop(true, 'floating');
+    panel.loadFile(path.join(__dirname, '..', 'panel', 'index.html'));
+    // It tucks itself away when you click elsewhere (except while debugging, so it can be captured).
+    panel.on('blur', () => {
+      if (!process.env.PANEFALL_DEBUG_DIR) hidePanel();
+    });
+    panel.on('closed', () => {
+      panel = null;
+    });
+    panel.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    panel.webContents.on('will-navigate', (event) => event.preventDefault());
+    logPageProblems(panel, 'panel');
+    panel.once('ready-to-show', () => revealPanel());
+  } else {
+    revealPanel();
+  }
+  panel.setBounds(bounds);
+}
+
+function revealPanel() {
+  panel.show();
+  panel.focus();
+  panel.webContents.send('panefall:panel-shown');
+  panel.webContents.send('panefall:state', fullState());
+  startMediaPolling();
+}
+
+function hidePanel() {
+  if (!panel || panel.isDestroyed() || !panel.isVisible()) return;
+  panel.hide();
+  panelHiddenAt = Date.now();
+  stopMediaPolling();
+}
+
+function startMediaPolling() {
+  stopMediaPolling();
+  if (!settings.nowPlaying || !isMac) return;
+  pollNowPlaying();
+  mediaTimer = setInterval(pollNowPlaying, 2000);
+}
+
+function stopMediaPolling() {
+  clearInterval(mediaTimer);
+  mediaTimer = null;
+}
+
+async function pollNowPlaying() {
+  const info = settings.nowPlaying ? await media.nowPlaying() : null;
+  if (JSON.stringify(info) === JSON.stringify(nowPlayingInfo)) return;
+  nowPlayingInfo = info;
+  if (panel && !panel.isDestroyed()) panel.webContents.send('panefall:state', fullState());
+}
+
 function syncOverlays() {
   const displays = screen.getAllDisplays();
   const ids = new Set(displays.map((d) => d.id));
@@ -401,7 +541,13 @@ function createOverlay(display) {
     skipTaskbar: true,
     enableLargerThanScreen: true,
     roundedCorners: false,
-    webPreferences: { preload: PRELOAD, contextIsolation: true, sandbox: true, backgroundThrottling: false },
+    webPreferences: {
+      preload: PRELOAD,
+      contextIsolation: true,
+      sandbox: true,
+      backgroundThrottling: false,
+      autoplayPolicy: 'no-user-gesture-required', // ambient sound starts without a click
+    },
   });
   win.setIgnoreMouseEvents(true);
   win.setAlwaysOnTop(true, 'screen-saver');
@@ -413,6 +559,7 @@ function createOverlay(display) {
     sendDisplay(win, display);
     win.webContents.send('panefall:settings', engineSettings());
     if (lastReport) win.webContents.send('panefall:windows', lastReport);
+    sendSound();
     if (!isPaused()) win.showInactive();
   });
   return win;
@@ -440,9 +587,14 @@ function logPageProblems(win, name) {
 
 // ---------------------------------------------------------------- menu bar
 
+let trayMenu = null;
+
 function createTray() {
   tray = new Tray(nativeImage.createFromPath(path.join(ROOT, 'assets', 'trayTemplate.png')));
   tray.setToolTip('Panefall');
+  // Click: the Quick Panel. Right-click (or Control-click): the menu.
+  tray.on('click', () => togglePanel());
+  tray.on('right-click', () => tray.popUpContextMenu(trayMenu));
   updateTray();
 }
 
@@ -464,9 +616,12 @@ function updateTray() {
     click: () => update({ mode: 'manual', weather: kind, paused: false }),
   });
 
-  tray.setContextMenu(
-    Menu.buildFromTemplate([
+  trayMenu = Menu.buildFromTemplate([
+      { label: 'Open Quick Panel', accelerator: accel('Control+Alt+S'), click: () => showPanel() },
       { label: 'Open Control Center…', accelerator: accel('Control+Alt+O'), click: () => openControlCenter() },
+      { type: 'separator' },
+      { label: 'Build a Snowman', click: () => COMMANDS.snowman() },
+      { label: 'Throw a Snowball', click: () => COMMANDS.snowball() },
       { type: 'separator' },
       { label: place, enabled: false },
       {
@@ -483,8 +638,7 @@ function updateTray() {
       { label: 'Send the Snowplow', accelerator: accel('Control+Alt+P'), click: COMMANDS.plow },
       { type: 'separator' },
       { label: 'Quit Panefall', role: 'quit' },
-    ]),
-  );
+  ]);
 }
 
 // ---------------------------------------------------------------- debugging
@@ -498,15 +652,23 @@ function startDebugSnapshots(dir) {
     const e = window.panefallEngine;
     return JSON.stringify({
       size: [e.width, e.height, e.dpr], origin: e.origin, settings: e.settings,
-      particles: e.particles.length, beads: e.beads.length, pointer: e.pointer,
+      particles: e.particles.length, beads: e.beads.length, pointer: e.pointer, snowmen: e.snowmen.length,
+      splats: e.beads.filter((b) => b.splat).length,
       windowsReported: e.report ? e.report.windows.length : null,
       surfaces: [...e.surfaces.values()].map((s) => ({ key: s.key, x: s.x, y: s.y, w: s.w,
         visibleCols: s.vis.reduce((a, b) => a + b, 0), cols: s.n, snow: Math.round(s.h.reduce((a, b) => a + b, 0)), items: s.items.length })),
     });
   })()`;
+  // Exercise the Quick Panel and the toys once, so they show up in the snapshots.
+  setTimeout(() => {
+    showPanel();
+    COMMANDS.snowman();
+    COMMANDS.snowball();
+  }, 4000);
   setInterval(async () => {
     const targets = [...overlays].map(([id, win]) => [`overlay-${id}`, win]);
     if (control && !control.isDestroyed()) targets.push(['control', control]);
+    if (panel && !panel.isDestroyed() && panel.isVisible()) targets.push(['panel', panel]);
     for (const [name, win] of targets) {
       if (win.isDestroyed()) continue;
       try {

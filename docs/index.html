@@ -66,6 +66,11 @@
               <button type="button" data-weather="leaves" aria-pressed="false">Leaves</button>
               <button type="button" data-weather="blossoms" aria-pressed="false">Blossoms</button>
             </div>
+            <div class="toys">
+              <button type="button" data-toy="snowman">☃️ Snowman</button>
+              <button type="button" data-toy="snowball">❄️ Snowball</button>
+              <button type="button" data-toy="gust">🌬️ Gust</button>
+            </div>
             <button type="button" class="link" id="sweep">Sweep it all away</button>
           </div>
         </aside>
@@ -111,12 +116,33 @@
         </div>
       </section>
 
+      <section id="play" class="section">
+        <p class="kicker">Play</p>
+        <h2>Build a snowman. Throw a snowball.</h2>
+        <p class="section-lede">Your desktop is a little winter world now, and it reacts to you.</p>
+        <div class="cards">
+          <article class="card">
+            <h3>☃️ Snowmen</h3>
+            <p>Press <kbd>⌃⌥M</kbd> and a snowman rolls itself up right under your pointer. It waves when you come near, watches your mouse, melts in the rain, and tumbles off if you drag its window away.</p>
+          </article>
+          <article class="card">
+            <h3>❄️ Snowballs</h3>
+            <p>Press <kbd>⌃⌥B</kbd> to throw one at the window under your pointer. It splats on the glass and slowly slides down.</p>
+          </article>
+          <article class="card">
+            <h3>🎧 Sounds &amp; music</h3>
+            <p>Rain, wind, thunder and a crackling fireplace, generated live so they never loop. Play, pause or skip what's in Apple Music or Spotify, all from the Quick Panel.</p>
+          </article>
+        </div>
+      </section>
+
       <section id="yours" class="section split">
         <div>
           <p class="kicker">Control Center</p>
           <h2>Make it yours.</h2>
           <p class="section-lede">Everything lives in one window, and nothing needs a restart.</p>
           <ul class="ticks">
+            <li><b>Quick Panel:</b> click the menu-bar icon (or <kbd class="light">⌃⌥S</kbd>) for weather, toys, sounds and music in a panel that slides in from the edge.</li>
             <li><b>Feel:</b> intensity, wind direction and strength, flake size, and how much collects.</li>
             <li><b>Where it lands:</b> on windows, on the Dock, or neither.</li>
             <li><b>Extras:</b> the snowplow, lightning flashes, and showing over full-screen apps.</li>
@@ -190,6 +216,12 @@
         <div class="shortcut-box">
           <h3>Keyboard shortcuts</h3>
           <dl>
+            <dt><kbd>⌃⌥S</kbd></dt>
+            <dd>Open the Quick Panel</dd>
+            <dt><kbd>⌃⌥M</kbd></dt>
+            <dd>Build a snowman under the pointer</dd>
+            <dt><kbd>⌃⌥B</kbd></dt>
+            <dd>Throw a snowball</dd>
             <dt><kbd>⌃⌥W</kbd></dt>
             <dd>Pause or resume</dd>
             <dt><kbd>⌃⌥N</kbd></dt>

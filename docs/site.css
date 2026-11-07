@@ -307,6 +307,37 @@ h1 {
   color: var(--warm-ink);
 }
 
+.win-try .toys {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+
+.win-try .toys button {
+  flex: 1;
+  padding: 6px 4px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  color: #e9ecf7;
+  font: 600 12.5px var(--sans);
+  cursor: pointer;
+}
+
+.win-try .toys button:active {
+  transform: scale(0.96);
+}
+
+.card kbd,
+kbd.light {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgba(23, 26, 40, 0.06);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 13px;
+}
+
 .link {
   padding: 0;
   border: 0;

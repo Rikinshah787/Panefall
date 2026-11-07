@@ -63,6 +63,7 @@
     if (key === 'wind') return Math.abs(v) < 0.08 ? 'Still' : `${v < 0 ? '←' : '→'} ${Math.round(Math.abs(v) * 100)}%`;
     if (key === 'size') return `×${v.toFixed(1)}`;
     if (key === 'depth') return v < 0.25 ? 'A dusting' : v < 0.6 ? 'Cozy' : v < 0.85 ? 'Deep' : 'Snowed in';
+    if (key.startsWith('sound')) return v < 0.02 ? 'Off' : `${Math.round(v * 100)}%`;
     return '';
   }
 
@@ -238,6 +239,7 @@
   $('#openAtLogin').addEventListener('change', (event) => api.command('openAtLogin', event.target.checked));
   $('#pause').addEventListener('click', () => api.command('togglePause'));
   $('#sweep').addEventListener('click', () => api.command('sweep'));
+  $('#snowman').addEventListener('click', () => api.command('snowman'));
   $('#plow').addEventListener('click', () => api.command('plow'));
   $('#dock-allow').addEventListener('click', () => api.command('requestAccessibility'));
 
@@ -346,6 +348,14 @@
       precipitationAlerts: true,
       shortcuts: true,
       showInDock: true,
+      soundOn: true,
+      soundMaster: 0.6,
+      soundRain: 0.7,
+      soundWind: 0.5,
+      soundFire: 0.3,
+      soundThunder: 0.8,
+      soundMatch: true,
+      nowPlaying: true,
     };
     const hourly = Array.from({ length: 12 }, (_, i) => {
       const snowing = i < 5 || i > 8;

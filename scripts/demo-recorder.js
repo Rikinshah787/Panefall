@@ -13,10 +13,13 @@
 (function () {
   'use strict';
 
+  // ?scene=snowman renders docs/assets/snowman.gif instead (a snowman builds itself, waves at
+  // the pointer, a snowball splats on the other window, then the window is dragged away).
+  const SCENE = new URLSearchParams(window.location.search).get('scene') || 'drag';
   const W = 720;
   const H = 405;
   const FPS = 15;
-  const SECONDS = 5;
+  const SECONDS = SCENE === 'snowman' ? 6 : 5;
   const FRAMES = FPS * SECONDS;
   const MENUBAR = 24;
 
@@ -68,6 +71,48 @@
     }
     return { win, pointer };
   }
+
+  const SNOWMAN_X = HOME.x + 175;
+
+  function snowmanTimeline(t) {
+    const atHome = { x: HOME.x + GRAB.x, y: HOME.y + GRAB.y };
+    const start = { x: 640, y: 360 };
+    const near = { x: SNOWMAN_X + 52, y: HOME.y - 44 };
+    const photo = { x: photos.x + 125, y: photos.y + 95 };
+    const wobble = (s) => ({ x: Math.sin(s * 2.4) * 10, y: Math.sin(s * 3.3) * 5 });
+    let win = HOME;
+    let pointer = start;
+    if (t < 1.4) pointer = mix(start, near, along(t, 0, 1.4));
+    else if (t < 2.6) pointer = { x: near.x + wobble(t - 1.4).x, y: near.y + wobble(t - 1.4).y };
+    else if (t < 2.9) pointer = mix(near, photo, along(t, 2.6, 2.9));
+    else if (t < 3.6) pointer = photo;
+    else if (t < 4.1) pointer = mix(photo, atHome, along(t, 3.6, 4.1));
+    else if (t < 4.8) {
+      win = mix(HOME, AWAY, along(t, 4.1, 4.8)); // the snowman tumbles off
+      pointer = { x: win.x + GRAB.x, y: win.y + GRAB.y };
+    } else if (t < 5.2) {
+      win = AWAY;
+      pointer = { x: AWAY.x + GRAB.x, y: AWAY.y + GRAB.y };
+    } else {
+      win = mix(AWAY, HOME, along(t, 5.2, 5.9));
+      pointer = { x: win.x + GRAB.x, y: win.y + GRAB.y };
+    }
+    return { win, pointer };
+  }
+
+  const ACTIONS =
+    SCENE === 'snowman'
+      ? [
+          [
+            0.1,
+            () => {
+              engine.buildSnowman({ x: SNOWMAN_X, y: HOME.y + 60 });
+              engine.snowmen[engine.snowmen.length - 1].scale = 1.5; // a bit bigger, to read at GIF size
+            },
+          ],
+          [2.9, () => engine.throwSnowball({ x: photos.x + 125, y: photos.y + 95 })],
+        ]
+      : [];
 
   // ------------------------------------------------------------ drawing
 
@@ -180,7 +225,8 @@
   let next = 0;
   function renderFrame() {
     const t = next / FPS;
-    const { win, pointer } = timeline(t);
+    const { win, pointer } = SCENE === 'snowman' ? snowmanTimeline(t) : timeline(t);
+    for (const [at, action] of ACTIONS) if (at >= t && at < t + 1 / FPS) action();
     notes.x = win.x;
     notes.y = win.y;
     reportWindows();

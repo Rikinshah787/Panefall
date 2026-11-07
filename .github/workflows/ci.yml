@@ -1,0 +1,27 @@
+# Quick checks on every push and pull request: every JavaScript file must parse, and the
+# website's copy of the engine must match the app's.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax check
+        run: |
+          for f in $(git ls-files '*.js'); do node --check "$f"; done
+      - name: Website engine is up to date
+        run: |
+          node scripts/build-site.js
+          git diff --exit-code -- docs/engine || (echo "Run 'npm run site' and commit docs/engine." && exit 1)

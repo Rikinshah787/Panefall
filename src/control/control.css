@@ -477,6 +477,19 @@ input[type='range']:disabled {
   cursor: pointer;
 }
 
+.toggle.spaced {
+  margin-top: 14px;
+}
+
+.inline-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-weight: 550;
+  cursor: pointer;
+}
+
 .card h2 + .toggle {
   border-top: 0;
   padding-top: 0;

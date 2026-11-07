@@ -17,7 +17,7 @@
   "main": "src/main/main.js",
   "private": true,
   "scripts": {
-    "start": "npm run build:helper && env -u ELECTRON_RUN_AS_NODE electron .",
+    "start": "node scripts/start.js",
     "build:helper": "bash scripts/build-mac-helper.sh",
     "icons": "node scripts/make-icons.js",
     "demo": "python3 -m http.server 4321 --bind 127.0.0.1",

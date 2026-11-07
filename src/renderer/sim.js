@@ -26,6 +26,11 @@
   const SPRAY = 2; // powder or water splash, purely visual
   const DROP = 3; // raindrop
   const LEAF = 4; // autumn leaf or blossom petal
+  const BALL = 5; // a snowball: thrown at a window, or what's left of a toppled snowman
+
+  const HATS = ['top', 'beanie', 'beanie', 'none'];
+  const SCARVES = ['#e2533c', '#2f9e6a', '#3b6cf6', '#f2b630', '#b04ad8'];
+  const GUST_SECONDS = 2.6;
 
   // Per weather: particles per second for every 1000 px of width at an intensity of 0..1,
   // how strong the gusts get (px/s), and roughly how fast it falls (to pre-fill the sky).
@@ -256,6 +261,10 @@
       this.flashes = [];
       this.nextBolt = rand(3, 8);
       this.pointer = null; // mouse pointer in local coordinates: weather parts around it
+      this.snowmen = [];
+      this.gustTime = -1; // seconds into a gust of wind, or -1
+      this.gustDir = 1;
+      this.onEvent = null; // (name, data) => void: 'thunder', 'splat', 'snowman', 'topple', 'gust'
       this.flakeSprite = makeFlakeSprite();
       this.beadSprite = makeBeadSprite();
       this.plow = new global.PanefallPlow(this);
@@ -264,6 +273,185 @@
     /** The mouse pointer in local coordinates, or null. Weather parts around it like an umbrella. */
     setPointer(point) {
       this.pointer = point && Number.isFinite(point.x) && Number.isFinite(point.y) ? { x: point.x, y: point.y } : null;
+    }
+
+    emit(name, data) {
+      if (this.onEvent) this.onEvent(name, data);
+    }
+
+    // ------------------------------------------------------------ toys
+
+    /**
+     * Rolls a snowman out of the snow at `point` (on the window under it, or the first ledge
+     * below it), or somewhere sensible when `point` is null.
+     */
+    buildSnowman(point) {
+      if (!this.width || !this.ground) return false;
+      const spot = point ? { s: this.surfaceAt(point.x, point.y), x: point.x } : this.randomSpot();
+      const s = spot.s;
+      const x = clamp(spot.x, s.x + 18, s.x + s.w - 18);
+      if (!s.visibleAt(x)) return false;
+      if (this.snowmen.length >= 8) this.toppleSnowman(this.snowmen[0], 0);
+      // It is rolled from the snow that is there.
+      const c = s.col(x);
+      for (let k = -10; k <= 10; k++) if (c + k >= 0 && c + k < s.n) s.h[c + k] *= 0.35;
+      s.dirty = true;
+      this.snowmen.push({
+        surface: s,
+        ox: x - s.x,
+        scale: s.kind === 'ground' ? rand(1.05, 1.3) : rand(0.85, 1.05),
+        age: 0,
+        melt: 0,
+        hat: pick(HATS),
+        scarf: pick(SCARVES),
+        facing: Math.random() < 0.5 ? -1 : 1,
+        blink: rand(2, 5),
+        seed: rand(0, 100),
+      });
+      for (let i = 0; i < 14; i++) this.addSpray(x + rand(-14, 14), s.y - 4, rand(-80, 80), -rand(60, 180));
+      this.emit('snowman');
+      return true;
+    }
+
+    /** Throws a snowball at the window under `point` (or a random window); it splats on the glass. */
+    throwSnowball(point) {
+      if (!this.width) return;
+      const visible = this.winRects.filter((r) => r.x + r.w > 40 && r.x < this.width - 40 && r.y < this.height - 60 && r.y + r.h > 60);
+      let rect = point ? this.glassAt(point.x, point.y) : null;
+      if (!rect && visible.length) rect = pick(visible);
+      let tx = point ? point.x : rand(this.width * 0.25, this.width * 0.75);
+      let ty = point ? point.y : this.height * rand(0.3, 0.6);
+      if (rect) {
+        for (let tries = 0; tries < 24; tries++) {
+          tx = rand(rect.x + 24, rect.x + rect.w - 24);
+          ty = rand(rect.y + 34, rect.y + Math.min(rect.h - 24, 300));
+          if (this.glassAt(tx, ty) === rect) break;
+        }
+      }
+      // Thrown from the far bottom corner, in an arc that lands on target after T seconds.
+      const fromLeft = tx > this.width / 2;
+      const sx = fromLeft ? -20 : this.width + 20;
+      const sy = this.height * 0.88;
+      const T = 0.85;
+      this.particles.push({
+        kind: BALL,
+        x: sx,
+        y: sy,
+        px: sx,
+        py: sy,
+        vx: (tx - sx) / T,
+        vy: (ty - sy) / T - 0.5 * GRAVITY * T,
+        r: 7,
+        vol: 90,
+        flight: 0,
+        target: { rect, x: tx, y: ty, t: T },
+        skip: null,
+      });
+    }
+
+    /** A strong gust of wind: leaves lift off, snow blows off the ledges. */
+    gust(direction) {
+      this.gustDir = direction || (Math.random() < 0.5 ? -1 : 1);
+      this.gustTime = 0;
+      this.emit('gust', this.gustDir);
+    }
+
+    /** A flash of lightning (and, with sound on, the thunder that follows). */
+    thunder() {
+      this.flashes.push({ t: 0, peak: 0.26 }, { t: -0.18, peak: 0.15 });
+      this.emit('thunder');
+    }
+
+    /** Where a snowman built at (x, y) would stand. */
+    surfaceAt(x, y) {
+      const glass = this.glassAt(x, y);
+      if (glass) {
+        const s = this.surfaces.get('w' + glass.id);
+        if (s && s.visibleAt(x)) return s;
+      }
+      let best = null;
+      for (const s of this.surfaces.values()) {
+        if (s.y < y - 4 || !s.visibleAt(x)) continue;
+        if (!best || s.y < best.y) best = s;
+      }
+      return best || this.ground;
+    }
+
+    /** A visible spot on a window ledge (or the ground) for a snowman built from a button. */
+    randomSpot() {
+      const ledges = [...this.surfaces.values()].filter((s) => s.kind === 'window' && s.w > 90 && s.vis.some((v) => v));
+      for (let tries = 0; tries < 30 && ledges.length; tries++) {
+        const s = pick(ledges);
+        const x = rand(s.x + 24, s.x + s.w - 24);
+        if (s.visibleAt(x)) return { s, x };
+      }
+      return { s: this.ground, x: rand(this.width * 0.15, this.width * 0.85) };
+    }
+
+    toppleSnowman(m, vx) {
+      const i = this.snowmen.indexOf(m);
+      if (i >= 0) this.snowmen.splice(i, 1);
+      const s = m.surface;
+      const x = s.x + m.ox;
+      if (!s.visibleAt(x)) return;
+      const k = m.scale * 1.2 * (1 - 0.3 * m.melt);
+      let y = s.y - s.heightAt(x);
+      for (const r of [14 * k, 10 * k, 7.5 * k]) {
+        y -= r * 1.6;
+        this.particles.push({ kind: BALL, x: x + rand(-3, 3), y, px: x, py: y, vx: clamp(vx * 0.2, -220, 220) + rand(-50, 50), vy: -rand(20, 90), r, vol: r * r * 2.2, flight: 0, target: null, skip: s });
+      }
+      this.emit('topple');
+    }
+
+    stepSnowmen(dt) {
+      const weather = this.settings.weather;
+      for (let i = this.snowmen.length - 1; i >= 0; i--) {
+        const m = this.snowmen[i];
+        m.age += dt;
+        if (this.surfaces.get(m.surface.key) !== m.surface) {
+          this.toppleSnowman(m, 0); // its window went away
+          continue;
+        }
+        if (weather === 'rain' || weather === 'storm') m.melt += dt / 30;
+        else if (weather !== 'snow') m.melt += dt / 120;
+        if (m.melt >= 1) {
+          this.snowmen.splice(i, 1);
+          continue;
+        }
+        m.blink -= dt;
+        if (m.blink < -0.14) m.blink = rand(2.5, 6);
+      }
+    }
+
+    stepGust(dt) {
+      if (this.gustTime < 0) return;
+      this.gustTime += dt;
+      if (this.gustTime > GUST_SECONDS) {
+        this.gustTime = -1;
+        return;
+      }
+      const env = Math.sin((Math.PI * this.gustTime) / GUST_SECONDS);
+      this.wind += this.gustDir * 320 * env;
+      if (env < 0.3) return;
+      let budget = 30; // snow blown off the ledges this frame
+      for (const s of this.surfaces.values()) {
+        for (let i = s.items.length - 1; i >= 0; i--) {
+          if (Math.random() < dt * 6 * env && s.visibleAt(s.x + s.items[i].ox)) {
+            const [it] = s.items.splice(i, 1);
+            this.liftItem(s, it, this.wind * rand(0.8, 1.2), -rand(40, 110));
+          }
+        }
+        if (!s.snow) continue;
+        for (let c = 0; c < s.n; c++) {
+          if (s.h[c] < 1) continue;
+          s.h[c] = Math.max(0, s.h[c] - 7 * env * dt);
+          if (budget > 0 && s.vis[c] && Math.random() < 0.08) {
+            budget--;
+            this.addSpray(s.x + c * COL, s.y - s.h[c], this.wind * rand(0.6, 1.2), -rand(10, 70));
+          }
+        }
+        s.dirty = true;
+      }
     }
 
     // ------------------------------------------------------------ inputs
@@ -328,6 +516,7 @@
       }
       this.dormant.clear();
       this.beads = [];
+      this.snowmen = [];
       this.particles = this.particles.filter((p) => p.kind === FLAKE || p.kind === DROP || (p.kind === LEAF && p.skip === null));
       this.plow.reset();
     }
@@ -423,6 +612,7 @@
 
       if (dy !== 0 || dw === 0) {
         // Dragged (or resized from the top edge): everything on it loses its footing.
+        for (const m of [...this.snowmen]) if (m.surface === s) this.toppleSnowman(m, dx / dt);
         this.shedColumns(s, 0, s.n, dx / dt, dy / dt);
         s.place(x, y, w);
         return;
@@ -443,6 +633,11 @@
         if (nc >= 0 && nc < s.n) s.h[nc] = oldH[c];
       }
       s.items = items.map((it) => ({ ...it, ox: it.ox + oldX - x }));
+      for (const m of [...this.snowmen]) {
+        if (m.surface !== s) continue;
+        m.ox += oldX - x;
+        if (m.ox < 10 || m.ox > w - 10) this.toppleSnowman(m, 0);
+      }
       s.snow = hadSnow;
       s.dirty = true;
     }
@@ -642,6 +837,7 @@
       const t = this.time;
       const gusts = 0.55 * Math.sin(t * 0.23) + 0.3 * Math.sin(t * 0.61 + 1.3) + 0.15 * Math.sin(t * 1.7 + 0.4);
       this.wind = this.settings.wind * MAX_WIND + weather.gust * gusts;
+      this.stepGust(dt);
 
       this.spawnCarry += weather.rate(this.settings.intensity) * (this.width / 1000) * dt;
       while (this.spawnCarry >= 1) {
@@ -652,6 +848,7 @@
       this.stepParticles(dt);
       this.stepBeads(dt);
       this.stepItems(dt);
+      this.stepSnowmen(dt);
       this.melt(dt);
       for (const s of this.surfaces.values()) if (s.dirty) this.settle(s);
       this.stepLightning(dt);
@@ -697,6 +894,19 @@
           p.angle += p.spin * dt * (0.4 + broad);
           p.x += p.vx * dt;
           p.y += p.vy * dt;
+        } else if (p.kind === BALL) {
+          p.vy += GRAVITY * dt;
+          if (!p.target) p.vx *= 1 - Math.min(1, dt * 0.5);
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          if (p.target) {
+            p.flight += dt;
+            if (p.flight >= p.target.t) {
+              this.splat(p);
+              removeAt(ps, i);
+              continue;
+            }
+          }
         } else {
           p.vy += GRAVITY * dt;
           p.vx *= 1 - Math.min(1, dt * 0.8);
@@ -724,7 +934,8 @@
           removeAt(ps, i);
           continue;
         }
-        if (p.kind !== SPRAY && p.y > p.py) {
+        // (A thrown snowball flies at the glass, over everything, until it lands.)
+        if (p.kind !== SPRAY && !(p.kind === BALL && p.target) && p.y > p.py) {
           const s = this.findHit(p);
           if (s) {
             this.land(p, s, this.hitCol);
@@ -813,7 +1024,27 @@
         }
       } else if (p.kind === LEAF) {
         this.restItem(s, p);
+      } else if (p.kind === BALL) {
+        this.deposit(s, c, p.vol, 4);
+        for (let i = 0; i < 8; i++) this.addSpray(p.x, p.y - 2, rand(-110, 110), -rand(40, 160));
+        this.emit('splat');
       }
+    }
+
+    /** A thrown snowball reaches its target: a burst of powder and a splat stuck to the glass. */
+    splat(p) {
+      const { x, y } = p.target;
+      for (let i = 0; i < 16; i++) {
+        const a = rand(0, TAU);
+        const v = rand(60, 220);
+        this.addSpray(x, y, Math.cos(a) * v, Math.sin(a) * v - 60);
+      }
+      const glass = this.glassAt(x, y);
+      if (glass) {
+        if (this.beads.length >= MAX_BEADS) this.beads.shift();
+        this.beads.push({ key: 'w' + glass.id, ox: x - glass.x, oy: y - glass.y, r: rand(8, 11), vy: 0, hold: 0, trail: 0, dead: false, splat: true, life: 0, seed: rand(0, 100) });
+      }
+      this.emit('splat');
     }
 
     deposit(s, c, area, spread) {
@@ -1013,6 +1244,13 @@
           b.dead = true;
           continue;
         }
+        if (b.splat) {
+          // A snowball splat slides slowly down the glass and melts away.
+          b.life += dt;
+          b.oy += (3 + b.life * 1.5) * dt;
+          if (b.life > 10 || b.oy > rect.h - 6) b.dead = true;
+          continue;
+        }
         // Drops dry up when the rain stops; the tiny ones left in trails always fade.
         if (!wet || b.r < 1.1) {
           b.r -= dt * (wet ? 0.02 : 0.06);
@@ -1078,6 +1316,10 @@
       if (this.particles.length >= MAX_PARTICLES) return;
       const x = rect.x + b.ox;
       const y = rect.y + b.oy;
+      if (b.splat) {
+        this.addChunk(x, y, rand(-20, 20), 0, 60, null);
+        return;
+      }
       this.particles.push({ kind: DROP, x, y, px: x, py: y, vx: 0, vy: 120, term: 700, depth: 0.5, glassY: Infinity, skip: null });
     }
 
@@ -1107,6 +1349,7 @@
           this.nextBolt = rand(5, 16);
           this.flashes.push({ t: 0, peak: rand(0.14, 0.24) });
           if (Math.random() < 0.7) this.flashes.push({ t: -rand(0.12, 0.28), peak: rand(0.06, 0.14) });
+          this.emit('thunder');
         }
       }
       let flash = 0;
@@ -1141,10 +1384,12 @@
       ctx.shadowOffsetY = d;
       for (const s of this.surfaces.values()) this.drawPile(s);
       this.drawChunks();
+      this.drawBalls();
       ctx.restore();
 
       for (const s of this.surfaces.values()) if (s.items.length) this.drawItems(s);
       ctx.setTransform(d, 0, 0, d, 0, 0);
+      this.drawSnowmen();
 
       this.plow.draw(ctx);
       this.drawDrops();
@@ -1302,9 +1547,184 @@
         const x = rect.x + b.ox;
         const y = rect.y + b.oy;
         if (this.glassAt(x, y) !== rect) continue; // covered by something in front
+        if (b.splat) {
+          this.drawSplat(x, y, b);
+          continue;
+        }
         const d = b.r * 3;
         const stretch = b.vy > 5 ? 1.25 : 1; // running drops elongate a little
         ctx.drawImage(this.beadSprite, x - d / 2, y - (d * stretch) / 2, d, d * stretch);
+      }
+    }
+
+    /** A snowball splat on glass: a lumpy white blob with a little trail where it slid. */
+    drawSplat(x, y, b) {
+      const ctx = this.ctx;
+      const fade = b.life < 8 ? 1 : Math.max(0, (10 - b.life) / 2);
+      const k = 1 - Math.min(0.45, b.life * 0.04); // it shrinks as it melts
+      const blob = (dx, dy) => {
+        ctx.beginPath();
+        ctx.arc(x + dx, y + dy, b.r * k, 0, TAU);
+        for (let i = 0; i < 7; i++) {
+          const a = b.seed + i * 0.9;
+          const rr = b.r * k * (0.35 + 0.25 * Math.sin(b.seed * 3 + i));
+          ctx.moveTo(x + dx + Math.cos(a) * b.r * k * 0.95 + rr, y + dy + Math.sin(a) * b.r * k * 0.95);
+          ctx.arc(x + dx + Math.cos(a) * b.r * k * 0.95, y + dy + Math.sin(a) * b.r * k * 0.95, rr, 0, TAU);
+        }
+        const trailY = y + dy - Math.min(28, b.life * 4);
+        ctx.moveTo(x + dx + b.r * 0.3 * k, trailY);
+        ctx.arc(x + dx, trailY, b.r * 0.3 * k, 0, TAU);
+      };
+      ctx.globalAlpha = fade * 0.35;
+      ctx.fillStyle = '#1c2a44';
+      blob(0, 1.5);
+      ctx.fill();
+      ctx.globalAlpha = fade;
+      ctx.fillStyle = '#f6f9fd';
+      blob(0, 0);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    drawBalls() {
+      const ctx = this.ctx;
+      for (const p of this.particles) {
+        if (p.kind !== BALL) continue;
+        const grad = ctx.createRadialGradient(p.x - p.r * 0.35, p.y - p.r * 0.4, p.r * 0.1, p.x, p.y, p.r);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(1, '#d4dfec');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, TAU);
+        ctx.fill();
+      }
+    }
+
+    drawSnowmen() {
+      const ctx = this.ctx;
+      for (const m of this.snowmen) {
+        const s = m.surface;
+        const x = s.x + m.ox;
+        if (!s.visibleAt(x)) continue;
+        const base = s.y - s.heightAt(x) + 2;
+        const grow = clamp(m.age / 2.2, 0, 1); // it builds itself over ~2 seconds
+        const k = m.scale * 1.2 * (1 - 0.3 * m.melt);
+        const r1 = 14 * k * clamp(grow / 0.35, 0, 1);
+        const r2 = 10 * k * clamp((grow - 0.3) / 0.25, 0, 1);
+        const r3 = 7.5 * k * clamp((grow - 0.5) / 0.22, 0, 1);
+        const dress = clamp((grow - 0.72) / 0.28, 0, 1);
+        const y1 = -r1 * 0.92;
+        const y2 = y1 - r1 * 0.78 - r2 * 0.8;
+        const y3 = y2 - r2 * 0.78 - r3 * 0.85;
+
+        // Notice the pointer: wave when it comes near, and look at it.
+        let wave = 0;
+        let lookX = 0;
+        let lookY = 0;
+        if (this.pointer) {
+          const dx = this.pointer.x - x;
+          const dy = this.pointer.y - (base + y3);
+          wave = Math.max(0, 1 - Math.hypot(dx, dy) / 170);
+          lookX = clamp(dx / 160, -1, 1);
+          lookY = clamp(dy / 160, -1, 1);
+        }
+        const tilt = m.melt * 0.3 * m.facing + Math.sin(m.age * 1.3 + m.seed) * 0.012;
+
+        ctx.save();
+        ctx.translate(x, base);
+        ctx.rotate(tilt);
+        ctx.shadowColor = 'rgba(20, 32, 56, 0.3)';
+        ctx.shadowBlur = 3 * this.dpr;
+        ctx.shadowOffsetY = this.dpr;
+
+        const ball = (cy, r) => {
+          if (r <= 0.3) return;
+          const grad = ctx.createRadialGradient(-r * 0.35, cy - r * 0.4, r * 0.1, 0, cy, r);
+          grad.addColorStop(0, '#ffffff');
+          grad.addColorStop(1, '#d6e0ed');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(0, cy, r, 0, TAU);
+          ctx.fill();
+        };
+        ball(y1, r1);
+        ball(y2, r2);
+        ball(y3, r3);
+        ctx.shadowColor = 'transparent';
+
+        if (dress > 0) {
+          ctx.globalAlpha = dress;
+          ctx.lineCap = 'round';
+          // stick arms (the right one waves)
+          ctx.strokeStyle = '#6b4325';
+          ctx.lineWidth = 1.6 * k;
+          const arm = (side, angle) => {
+            const sx = side * r2 * 0.85;
+            const ex = sx + side * Math.cos(angle) * 14 * k;
+            const ey = y2 - Math.sin(angle) * 14 * k;
+            ctx.beginPath();
+            ctx.moveTo(sx, y2);
+            ctx.lineTo(ex, ey);
+            ctx.moveTo(sx + side * Math.cos(angle) * 9 * k, y2 - Math.sin(angle) * 9 * k);
+            ctx.lineTo(sx + side * Math.cos(angle + 0.7) * 13 * k, y2 - Math.sin(angle + 0.7) * 13 * k);
+            ctx.stroke();
+          };
+          arm(-1, 0.45);
+          arm(1, 0.45 + wave * (0.6 + 0.5 * Math.sin(m.age * 12)));
+          // coal buttons
+          ctx.fillStyle = '#23262e';
+          for (const by of [y2 - r2 * 0.25, y2 + r2 * 0.3]) {
+            ctx.beginPath();
+            ctx.arc(0, by, 1.2 * k, 0, TAU);
+            ctx.fill();
+          }
+          // scarf
+          ctx.fillStyle = m.scarf;
+          ctx.beginPath();
+          ctx.ellipse(0, y2 - r2 * 0.8, r3 * 1.05, 2.2 * k, 0, 0, TAU);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.roundRect(m.facing * r3 * 0.35, y2 - r2 * 0.8, 3.2 * k, 9 * k, 1.2 * k);
+          ctx.fill();
+          // eyes (they blink) and a carrot nose, all turned toward the pointer
+          const ex = lookX * 1.4 * k;
+          const ey = y3 - 1.6 * k + lookY * 1 * k;
+          ctx.fillStyle = '#23262e';
+          for (const side of [-1, 1]) {
+            ctx.beginPath();
+            if (m.blink < 0) ctx.ellipse(side * 2.6 * k + ex, ey, 1.2 * k, 0.3 * k, 0, 0, TAU);
+            else ctx.arc(side * 2.6 * k + ex, ey, 1.15 * k, 0, TAU);
+            ctx.fill();
+          }
+          const noseDir = Math.abs(lookX) > 0.15 ? Math.sign(lookX) : m.facing;
+          ctx.fillStyle = '#f08a24';
+          ctx.beginPath();
+          ctx.moveTo(ex, y3 + 0.4 * k);
+          ctx.lineTo(ex + noseDir * 7 * k, y3 + 1.4 * k);
+          ctx.lineTo(ex, y3 + 2.2 * k);
+          ctx.closePath();
+          ctx.fill();
+          // hat
+          const top = y3 - r3 * 0.85;
+          if (m.hat === 'top') {
+            ctx.fillStyle = '#1d2029';
+            ctx.fillRect(-8 * k, top - 1.2 * k, 16 * k, 2.4 * k);
+            ctx.fillRect(-5.2 * k, top - 10 * k, 10.4 * k, 9 * k);
+            ctx.fillStyle = m.scarf;
+            ctx.fillRect(-5.2 * k, top - 3.4 * k, 10.4 * k, 1.8 * k);
+          } else if (m.hat === 'beanie') {
+            ctx.fillStyle = m.scarf;
+            ctx.beginPath();
+            ctx.ellipse(0, top + 1.5 * k, r3 * 0.95, r3 * 0.75, 0, Math.PI, 0);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(0, top - r3 * 0.7 + 1 * k, 2.2 * k, 0, TAU);
+            ctx.fill();
+          }
+          ctx.globalAlpha = 1;
+        }
+        ctx.restore();
       }
     }
 

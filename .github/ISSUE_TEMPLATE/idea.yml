@@ -1,0 +1,34 @@
+name: Idea
+description: A new kind of weather, a toy, a utility, or anything that would make Panefall better
+labels: [idea]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What's the idea?
+      description: What would happen on your desktop? A sketch or a clip of something similar helps.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why would it be great?
+      description: When would you use it, and what would it make better?
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of Panefall?
+      options:
+        - A new kind of weather
+        - Toys (snowmen, snowballs, …)
+        - Sounds or music
+        - Quick Panel or Control Center
+        - Live weather
+        - Windows or Linux
+        - Something else
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Want to build it?
+      options:
+        - label: I'd like to work on this myself

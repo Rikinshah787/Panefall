@@ -145,6 +145,12 @@
     });
   }
   document.getElementById('sweep').addEventListener('click', () => heroEngine.clearAll());
+  const toys = {
+    snowman: () => heroEngine.buildSnowman(null),
+    snowball: () => heroEngine.throwSnowball(null),
+    gust: () => heroEngine.gust(),
+  };
+  for (const button of document.querySelectorAll('[data-toy]')) button.addEventListener('click', () => toys[button.dataset.toy]());
 
   function fitHero() {
     layout();

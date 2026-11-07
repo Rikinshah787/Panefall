@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld('panefall', {
   onWindows: listen('panefall:windows'),
   onCommand: listen('panefall:command'),
   onPointer: listen('panefall:pointer'),
+  onSound: listen('panefall:sound'),
+  onPanelShown: listen('panefall:panel-shown'),
   // Control Center
   getState: () => ipcRenderer.invoke('panefall:getState'),
   update: (patch) => ipcRenderer.invoke('panefall:update', patch),

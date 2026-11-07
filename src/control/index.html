@@ -149,12 +149,46 @@
         </div>
 
         <section class="card">
+          <div class="card-head">
+            <h2>Sounds</h2>
+            <label class="inline-switch"><span>Ambient sound</span><input type="checkbox" data-setting="soundOn" /></label>
+          </div>
+          <div class="sliders">
+            <label class="slider">
+              <span class="label">Rain</span><output data-for="soundRain"></output>
+              <input type="range" data-setting="soundRain" min="0" max="1" step="0.01" />
+            </label>
+            <label class="slider">
+              <span class="label">Wind</span><output data-for="soundWind"></output>
+              <input type="range" data-setting="soundWind" min="0" max="1" step="0.01" />
+            </label>
+            <label class="slider">
+              <span class="label">Fireplace</span><output data-for="soundFire"></output>
+              <input type="range" data-setting="soundFire" min="0" max="1" step="0.01" />
+            </label>
+            <label class="slider">
+              <span class="label">Thunder</span><output data-for="soundThunder"></output>
+              <input type="range" data-setting="soundThunder" min="0" max="1" step="0.01" />
+            </label>
+          </div>
+          <label class="toggle spaced">
+            <span><b>Follow the weather</b><small>Rain sounds only while it rains, and the wind follows the gusts on screen</small></span>
+            <input type="checkbox" data-setting="soundMatch" />
+          </label>
+          <label class="toggle">
+            <span><b>Now playing in the Quick Panel</b><small>Shows and controls Apple Music or Spotify</small></span>
+            <input type="checkbox" data-setting="nowPlaying" />
+          </label>
+        </section>
+
+        <section class="card">
           <h2>Keyboard shortcuts</h2>
           <ul id="shortcuts" class="shortcuts"></ul>
         </section>
       </main>
 
       <footer class="footer">
+        <button id="snowman" class="button" type="button">☃️ Build a snowman</button>
         <button id="sweep" class="button" type="button">Sweep everything away</button>
         <button id="plow" class="button" type="button">Send the snowplow</button>
         <span class="spacer"></span>

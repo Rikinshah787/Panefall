@@ -29,6 +29,15 @@ const DEFAULTS = Object.freeze({
   precipitationAlerts: true,
   shortcuts: true,
   showInDock: true,
+  // Ambient sound (generated live; off until the user turns it on)
+  soundOn: false,
+  soundMaster: 0.6,
+  soundRain: 0.7,
+  soundWind: 0.5,
+  soundFire: 0,
+  soundThunder: 0.8,
+  soundMatch: true, // rain only while it rains, wind follows the gusts
+  nowPlaying: true, // show and control Apple Music / Spotify in the Quick Panel
 });
 
 const bool = (v) => (typeof v === 'boolean' ? v : undefined);
@@ -70,6 +79,14 @@ const SCHEMA = {
   precipitationAlerts: bool,
   shortcuts: bool,
   showInDock: bool,
+  soundOn: bool,
+  soundMaster: range(0, 1),
+  soundRain: range(0, 1),
+  soundWind: range(0, 1),
+  soundFire: range(0, 1),
+  soundThunder: range(0, 1),
+  soundMatch: bool,
+  nowPlaying: bool,
 };
 
 /** Keeps only known keys with valid values (numbers are clamped into range). */

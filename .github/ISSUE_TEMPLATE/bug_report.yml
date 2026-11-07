@@ -1,0 +1,54 @@
+name: Bug report
+description: Something isn't working the way it should
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you see, and what did you expect to see instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can we make it happen?
+      placeholder: |
+        1. Pick Rain in the Quick Panel
+        2. Drag a window to the second display
+        3. …
+  - type: dropdown
+    id: weather
+    attributes:
+      label: Which weather?
+      options:
+        - Snow
+        - Rain
+        - Storm
+        - Leaves
+        - Blossoms
+        - Live weather
+        - Not about the weather
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: e.g. macOS 15.1
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Panefall version
+      description: Shown at the bottom of the Control Center.
+      placeholder: e.g. v0.1.0
+  - type: textarea
+    id: displays
+    attributes:
+      label: Your displays
+      description: How many screens? Any external ones? Where is the Dock?
+  - type: textarea
+    id: debug
+    attributes:
+      label: Debug snapshot (optional, very helpful)
+      description: Run `PANEFALL_DEBUG_DIR=/tmp/panefall npm start`, reproduce the problem, and attach the PNG and JSON files it saves.
