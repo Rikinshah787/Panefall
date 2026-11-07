@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:" />
+    <title>Panefall</title>
+    <link rel="stylesheet" href="control.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="titlebar">
+        <img class="logo" src="../../assets/icon.png" alt="" width="52" height="52" />
+        <div class="brand">
+          <h1>Panefall</h1>
+          <p id="status">Weather for your windows</p>
+        </div>
+        <button id="pause" class="button primary" type="button">Pause</button>
+      </header>
+
+      <main>
+        <section class="card">
+          <div class="card-head">
+            <h2>Weather</h2>
+            <div class="segmented" role="group" aria-label="Where the weather comes from">
+              <button type="button" data-mode="manual">Pick my own</button>
+              <button type="button" data-mode="live">Follow real weather</button>
+            </div>
+          </div>
+
+          <div id="scenes" class="scenes">
+            <button type="button" data-weather="snow"><svg class="icon" viewBox="0 0 24 24"><use href="#i-snow" /></svg><span>Snow</span></button>
+            <button type="button" data-weather="rain"><svg class="icon" viewBox="0 0 24 24"><use href="#i-rain" /></svg><span>Rain</span></button>
+            <button type="button" data-weather="storm"><svg class="icon" viewBox="0 0 24 24"><use href="#i-storm" /></svg><span>Storm</span></button>
+            <button type="button" data-weather="leaves"><svg class="icon" viewBox="0 0 24 24"><use href="#i-leaves" /></svg><span>Leaves</span></button>
+            <button type="button" data-weather="blossoms"><svg class="icon" viewBox="0 0 24 24"><use href="#i-blossoms" /></svg><span>Blossoms</span></button>
+            <button type="button" data-weather="clear"><svg class="icon" viewBox="0 0 24 24"><use href="#i-clear" /></svg><span>Calm</span></button>
+          </div>
+
+          <div id="live" class="live" hidden>
+            <div class="place">
+              <svg class="icon" viewBox="0 0 24 24"><use href="#i-pin" /></svg>
+              <input id="place" type="search" placeholder="Search for your city" autocomplete="off" spellcheck="false" aria-label="Search for a place" />
+              <ul id="places" class="places" hidden></ul>
+            </div>
+            <div id="now" class="now"></div>
+            <ol id="hours" class="hours"></ol>
+            <label class="inline">
+              When it’s dry outside
+              <select data-setting="dryWeather">
+                <option value="seasonal">show the season (leaves in autumn, blossoms in spring)</option>
+                <option value="clear">show nothing</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Feel</h2>
+          <div class="sliders">
+            <label class="slider">
+              <span class="label">Intensity</span><output data-for="intensity"></output>
+              <input type="range" data-setting="intensity" min="0" max="1" step="0.01" />
+            </label>
+            <label class="slider">
+              <span class="label">Wind</span><output data-for="wind"></output>
+              <input type="range" class="centered" data-setting="wind" min="-1" max="1" step="0.01" />
+            </label>
+            <label class="slider">
+              <span class="label">Size</span><output data-for="size"></output>
+              <input type="range" data-setting="size" min="0.5" max="1.8" step="0.01" />
+            </label>
+            <label class="slider">
+              <span class="label">How much collects</span><output data-for="depth"></output>
+              <input type="range" data-setting="depth" min="0" max="1" step="0.01" />
+            </label>
+          </div>
+          <p id="live-note" class="note" hidden>Intensity and wind are coming from the live weather.</p>
+        </section>
+
+        <div class="columns">
+          <section class="card">
+            <h2>On your desktop</h2>
+            <label class="toggle">
+              <span><b>Collect on windows</b><small>Snow piles up, leaves settle, rain beads on the glass</small></span>
+              <input type="checkbox" data-setting="collectOnWindows" />
+            </label>
+            <div class="toggle" id="dock-row">
+              <span><b>Collect on the Dock</b><small id="dock-note"></small></span>
+              <button id="dock-allow" class="button small" type="button" hidden>Allow…</button>
+              <input type="checkbox" data-setting="collectOnDock" aria-label="Collect on the Dock" />
+            </div>
+            <label class="toggle">
+              <span><b>Umbrella cursor</b><small>Rain and snow part around your mouse pointer</small></span>
+              <input type="checkbox" data-setting="umbrella" />
+            </label>
+            <label class="toggle">
+              <span><b>Snowplow</b><small>Clears deep snow off the bottom of the screen</small></span>
+              <input type="checkbox" data-setting="plow" />
+            </label>
+            <label class="toggle">
+              <span><b>Lightning flashes</b><small>Soft, occasional flashes during storms</small></span>
+              <input type="checkbox" data-setting="lightning" />
+            </label>
+            <label class="toggle">
+              <span><b>Over full-screen apps</b><small>Keep the weather on top of full-screen windows</small></span>
+              <input type="checkbox" data-setting="overFullscreen" />
+            </label>
+          </section>
+
+          <section class="card">
+            <h2>Utilities</h2>
+            <label class="toggle">
+              <span><b>Temperature in the menu bar</b><small>For the place you follow</small></span>
+              <input type="checkbox" data-setting="menuBarTemperature" />
+            </label>
+            <label class="toggle">
+              <span><b>Heads-up before rain or snow</b><small>A notification when it’s likely soon</small></span>
+              <input type="checkbox" data-setting="precipitationAlerts" />
+            </label>
+            <label class="toggle">
+              <span><b>Pause on battery</b><small>Stops the weather while unplugged</small></span>
+              <input type="checkbox" data-setting="pauseOnBattery" />
+            </label>
+            <label class="toggle">
+              <span><b>Battery-friendly frame rate</b><small>30 fps instead of 60</small></span>
+              <input type="checkbox" id="fps30" />
+            </label>
+            <label class="toggle">
+              <span><b>Keyboard shortcuts</b><small>Control Panefall from any app</small></span>
+              <input type="checkbox" data-setting="shortcuts" />
+            </label>
+            <label class="toggle" id="dock-icon-row">
+              <span><b>Show in the Dock</b><small>Otherwise Panefall lives in the menu bar</small></span>
+              <input type="checkbox" data-setting="showInDock" />
+            </label>
+            <label class="toggle">
+              <span><b>Open at login</b><small id="login-note"></small></span>
+              <input type="checkbox" id="openAtLogin" />
+            </label>
+            <label class="toggle">
+              <span><b>Temperature unit</b></span>
+              <select data-setting="units">
+                <option value="celsius">°C</option>
+                <option value="fahrenheit">°F</option>
+              </select>
+            </label>
+          </section>
+        </div>
+
+        <section class="card">
+          <h2>Keyboard shortcuts</h2>
+          <ul id="shortcuts" class="shortcuts"></ul>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <button id="sweep" class="button" type="button">Sweep everything away</button>
+        <button id="plow" class="button" type="button">Send the snowplow</button>
+        <span class="spacer"></span>
+        <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Weather data by Open-Meteo.com</a>
+        <span id="version" class="version"></span>
+      </footer>
+    </div>
+
+    <!-- Icons (24×24, stroked) -->
+    <svg class="sprite" width="0" height="0" aria-hidden="true">
+      <symbol id="i-snow" viewBox="0 0 24 24">
+        <path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9.5 4.5 12 7l2.5-2.5M9.5 19.5 12 17l2.5 2.5M4 10.4l3.4-.9-.9-3.4M20 13.6l-3.4.9.9 3.4M4 13.6l3.4.9-.9 3.4M20 10.4l-3.4-.9.9-3.4" />
+      </symbol>
+      <symbol id="i-cloud" viewBox="0 0 24 24">
+        <path d="M6.5 15h10.5a3.5 3.5 0 0 0 .4-6.98A5 5 0 0 0 7.8 7.2 4 4 0 0 0 6.5 15z" />
+      </symbol>
+      <symbol id="i-rain" viewBox="0 0 24 24">
+        <path d="M6.5 14h10.5a3.5 3.5 0 0 0 .4-6.98A5 5 0 0 0 7.8 6.2 4 4 0 0 0 6.5 14z" />
+        <path d="M8.5 17l-1 3M12.5 17l-1 3M16.5 17l-1 3" />
+      </symbol>
+      <symbol id="i-storm" viewBox="0 0 24 24">
+        <path d="M6.5 14h10.5a3.5 3.5 0 0 0 .4-6.98A5 5 0 0 0 7.8 6.2 4 4 0 0 0 6.5 14z" />
+        <path d="M12.5 15.5l-2 3.2h3l-2 3.3" />
+      </symbol>
+      <symbol id="i-leaves" viewBox="0 0 24 24">
+        <path d="M5 19c0-8 5-14 14-14 0 9-6 14-14 14z" />
+        <path d="M5 19 14.5 9.5" />
+      </symbol>
+      <symbol id="i-blossoms" viewBox="0 0 24 24">
+        <circle cx="12" cy="7.3" r="2.8" />
+        <circle cx="16.4" cy="10.5" r="2.8" />
+        <circle cx="14.7" cy="15.7" r="2.8" />
+        <circle cx="9.3" cy="15.7" r="2.8" />
+        <circle cx="7.6" cy="10.5" r="2.8" />
+        <circle cx="12" cy="12" r="1.3" />
+      </symbol>
+      <symbol id="i-clear" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" />
+      </symbol>
+      <symbol id="i-night" viewBox="0 0 24 24">
+        <path d="M19.5 14.5A8 8 0 1 1 9.5 4.5a6.5 6.5 0 0 0 10 10z" />
+      </symbol>
+      <symbol id="i-pin" viewBox="0 0 24 24">
+        <path d="M12 21s-6-5.6-6-10.5a6 6 0 0 1 12 0C18 15.4 12 21 12 21z" />
+        <circle cx="12" cy="10.5" r="2" />
+      </symbol>
+    </svg>
+
+    <script src="control.js"></script>
+  </body>
+</html>

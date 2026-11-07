@@ -1,0 +1,59 @@
+{
+  "name": "panefall",
+  "productName": "Panefall",
+  "version": "0.1.0",
+  "description": "Real weather for your desktop. Snow piles up on your windows, rain beads on the glass, leaves settle on the ledges, and it all falls off when you drag them.",
+  "keywords": [
+    "weather",
+    "desktop",
+    "snow",
+    "rain",
+    "macos",
+    "electron",
+    "overlay"
+  ],
+  "license": "MIT",
+  "author": "Panefall contributors",
+  "main": "src/main/main.js",
+  "private": true,
+  "scripts": {
+    "start": "npm run build:helper && env -u ELECTRON_RUN_AS_NODE electron .",
+    "build:helper": "bash scripts/build-mac-helper.sh",
+    "icons": "node scripts/make-icons.js",
+    "demo": "python3 -m http.server 4321 --bind 127.0.0.1",
+    "site": "node scripts/build-site.js",
+    "site:preview": "npm run site && python3 -m http.server 4321 --bind 127.0.0.1 --directory docs",
+    "dist:mac": "npm run build:helper && electron-builder --mac"
+  },
+  "build": {
+    "appId": "app.panefall.desktop",
+    "productName": "Panefall",
+    "copyright": "Copyright © 2026 Panefall contributors",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.weather",
+      "icon": "assets/icon.png",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "extraResources": [
+        {
+          "from": "build/bin/panefall-window-tracker",
+          "to": "bin/panefall-window-tracker"
+        }
+      ]
+    }
+  },
+  "devDependencies": {
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0"
+  }
+}

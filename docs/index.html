@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Panefall · Weather that lands on your windows</title>
+    <meta
+      name="description"
+      content="Panefall is a free, open-source app that brings weather to your Mac desktop. Snow piles up on your windows, rain beads on the glass, leaves settle on the ledges, and it all falls off when you drag them."
+    />
+    <meta property="og:title" content="Panefall · Weather that lands on your windows" />
+    <meta property="og:description" content="Snow piles up on your windows, rain beads on the glass, and it follows the real weather outside. Free and open source." />
+    <meta property="og:image" content="https://rikinshah787.github.io/Panefall/assets/hero.jpeg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#0d1330" />
+    <link rel="icon" href="assets/icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="site.css" />
+    <script>
+      document.documentElement.classList.add('js');
+    </script>
+  </head>
+  <body>
+    <header class="hero" id="top">
+      <canvas id="weather" aria-hidden="true"></canvas>
+
+      <nav class="menubar" aria-label="Main">
+        <a class="mark" href="#top"><img src="assets/icon.png" alt="" width="22" height="22" />Panefall</a>
+        <div class="menu-links">
+          <a href="#weathers">Weathers</a>
+          <a href="#yours">Customize</a>
+          <a href="#how">How it works</a>
+          <a data-repo="" href="#">GitHub</a>
+        </div>
+        <span class="menubar-temp" aria-hidden="true">−2°</span>
+      </nav>
+
+      <div class="desk">
+        <article class="win win-main" data-id="1">
+          <div class="bar"><i></i><i></i><i></i><span>Panefall</span></div>
+          <div class="win-body">
+            <p class="eyebrow">Free &amp; open source · for macOS</p>
+            <h1>Weather that lands on your windows.</h1>
+            <p class="lede">
+              Snow piles up on top of your windows. Rain beads on the glass. Autumn leaves settle on the ledges. Drag a window and it all
+              tumbles off. Or let Panefall follow the real weather outside.
+            </p>
+            <div class="ctas">
+              <a class="btn btn-warm" data-repo="/releases/latest" href="#">Download for macOS</a>
+              <a class="btn btn-ghost" data-repo="" href="#">View on GitHub</a>
+            </div>
+            <p class="fine">macOS 11 or later · Windows version in progress · MIT licensed</p>
+          </div>
+        </article>
+
+        <aside class="win win-try" data-id="2">
+          <div class="bar"><i></i><i></i><i></i><span>Try it here</span></div>
+          <div class="win-body">
+            <p>Pick a weather and drag these windows by their title bars. Your pointer is an umbrella: hold it in the rain.</p>
+            <div class="chips" role="group" aria-label="Weather">
+              <button type="button" data-weather="snow" aria-pressed="true">Snow</button>
+              <button type="button" data-weather="rain" aria-pressed="false">Rain</button>
+              <button type="button" data-weather="storm" aria-pressed="false">Storm</button>
+              <button type="button" data-weather="leaves" aria-pressed="false">Leaves</button>
+              <button type="button" data-weather="blossoms" aria-pressed="false">Blossoms</button>
+            </div>
+            <button type="button" class="link" id="sweep">Sweep it all away</button>
+          </div>
+        </aside>
+      </div>
+    </header>
+
+    <main>
+      <section id="weathers" class="section">
+        <p class="kicker">Weathers</p>
+        <h2>Five kinds of weather, plus the real one.</h2>
+        <p class="section-lede">Each one behaves differently once it reaches your desktop.</p>
+        <div class="cards">
+          <article class="card">
+            <div class="mini dark" data-scene="snow"><div class="mini-win"><span class="mini-bar"><i></i><i></i><i></i></span></div><canvas></canvas></div>
+            <h3><svg class="icon" viewBox="0 0 24 24"><use href="#i-snow" /></svg>Snow</h3>
+            <p>Piles up on top of every window, slumps into soft drifts and slides off in clumps when you move the window. A little snowplow clears the ground.</p>
+          </article>
+          <article class="card">
+            <div class="mini" data-scene="rain"><div class="mini-win"><span class="mini-bar"><i></i><i></i><i></i></span></div><canvas></canvas></div>
+            <h3><svg class="icon" viewBox="0 0 24 24"><use href="#i-rain" /></svg>Rain</h3>
+            <p>Streaks past and splashes on the ledges. Some drops land on the glass of your windows, bead up, merge and trickle down.</p>
+          </article>
+          <article class="card">
+            <div class="mini dark" data-scene="storm"><div class="mini-win"><span class="mini-bar"><i></i><i></i><i></i></span></div><canvas></canvas></div>
+            <h3><svg class="icon" viewBox="0 0 24 24"><use href="#i-storm" /></svg>Storm</h3>
+            <p>Heavier rain, gusty wind and soft, occasional flashes of lightning. You can turn the flashes off.</p>
+          </article>
+          <article class="card">
+            <div class="mini" data-scene="leaves"><div class="mini-win"><span class="mini-bar"><i></i><i></i><i></i></span></div><canvas></canvas></div>
+            <h3><svg class="icon" viewBox="0 0 24 24"><use href="#i-leaves" /></svg>Autumn leaves</h3>
+            <p>Leaves tumble down, come to rest along the tops of your windows, and blow away again when the wind picks up.</p>
+          </article>
+          <article class="card">
+            <div class="mini dark" data-scene="blossoms"><div class="mini-win"><span class="mini-bar"><i></i><i></i><i></i></span></div><canvas></canvas></div>
+            <h3><svg class="icon" viewBox="0 0 24 24"><use href="#i-blossoms" /></svg>Blossoms</h3>
+            <p>Pink petals drift across the screen and gather on the ledges. A quiet one for spring.</p>
+          </article>
+          <article class="card card-live">
+            <div class="mini" data-scene="live"><div class="mini-win"><span class="mini-bar"><i></i><i></i><i></i></span></div><canvas></canvas><span class="mini-tag"></span></div>
+            <h3><svg class="icon" viewBox="0 0 24 24"><use href="#i-pin" /></svg>Live weather</h3>
+            <p>Choose your city and Panefall rains when it rains there, snows when it snows, and leans with the real wind. Dry days show the season.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="yours" class="section split">
+        <div>
+          <p class="kicker">Control Center</p>
+          <h2>Make it yours.</h2>
+          <p class="section-lede">Everything lives in one window, and nothing needs a restart.</p>
+          <ul class="ticks">
+            <li><b>Feel:</b> intensity, wind direction and strength, flake size, and how much collects.</li>
+            <li><b>Where it lands:</b> on windows, on the Dock, or neither.</li>
+            <li><b>Extras:</b> the snowplow, lightning flashes, and showing over full-screen apps.</li>
+            <li><b>Live forecast:</b> the next hours for your place, right in the Control Center.</li>
+          </ul>
+        </div>
+        <figure class="shot">
+          <img src="assets/control-center.png" alt="The Panefall Control Center with weather choices, live forecast and sliders" width="820" height="900" loading="lazy" />
+        </figure>
+      </section>
+
+      <section class="section">
+        <p class="kicker">Utilities</p>
+        <h2>Small things that help.</h2>
+        <div class="cards cards-small">
+          <article class="card">
+            <h3>Temperature in the menu bar</h3>
+            <p>The temperature for your place, always one glance away.</p>
+          </article>
+          <article class="card">
+            <h3>A heads-up before it rains</h3>
+            <p>A notification when rain or snow is likely in the next hour or two.</p>
+          </article>
+          <article class="card">
+            <h3>Easy on the battery</h3>
+            <p>Pause automatically when you unplug, or run at 30 frames per second.</p>
+          </article>
+          <article class="card">
+            <h3>Shortcuts from anywhere</h3>
+            <p>Pause, switch weather or sweep it all away without leaving what you’re doing.</p>
+          </article>
+          <article class="card">
+            <h3>An umbrella for your pointer</h3>
+            <p>Rain and snow part around your mouse and drip off the edges, and clicks still go straight through to your apps.</p>
+          </article>
+          <article class="card">
+            <h3>Every display</h3>
+            <p>Weather falls on all your screens, each with its own piles and puddles.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="how" class="section how">
+        <p class="kicker">How it works</p>
+        <h2>Three small parts.</h2>
+        <ol class="steps">
+          <li>
+            <h3>It knows where your windows are</h3>
+            <p>A tiny native helper asks macOS for the position and size of each window. Only that: no screen recording, no window contents.</p>
+          </li>
+          <li>
+            <h3>It simulates the weather</h3>
+            <p>Every flake, drop and leaf is simulated. Snow piles slump and spill over the edges, raindrops merge and run, leaves catch the wind.</p>
+          </li>
+          <li>
+            <h3>It draws on a clear layer</h3>
+            <p>A transparent, click-through layer above your desktop draws it all at 60 frames per second, or 30 to save battery.</p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="section split">
+        <div>
+          <p class="kicker">Privacy</p>
+          <h2>Nothing to sign up for.</h2>
+          <p class="section-lede">
+            No account and no analytics. The only network request Panefall makes is to
+            <a href="https://open-meteo.com/">Open-Meteo</a> for the weather at the city you choose, and only if you turn on live weather.
+          </p>
+        </div>
+        <div class="shortcut-box">
+          <h3>Keyboard shortcuts</h3>
+          <dl>
+            <dt><kbd>⌃⌥W</kbd></dt>
+            <dd>Pause or resume</dd>
+            <dt><kbd>⌃⌥N</kbd></dt>
+            <dd>Next weather</dd>
+            <dt><kbd>⌃⌥K</kbd></dt>
+            <dd>Sweep everything away</dd>
+            <dt><kbd>⌃⌥P</kbd></dt>
+            <dd>Send the snowplow</dd>
+            <dt><kbd>⌃⌥O</kbd></dt>
+            <dd>Open the Control Center</dd>
+          </dl>
+        </div>
+      </section>
+
+      <section class="section oss">
+        <h2>Built in the open.</h2>
+        <p class="section-lede">
+          Panefall is MIT licensed. Read the code, file an idea, or help bring it to Windows and Linux.
+        </p>
+        <div class="ctas center">
+          <a class="btn btn-warm" data-repo="/releases/latest" href="#">Download for macOS</a>
+          <a class="btn btn-dark" data-repo="" href="#">Star on GitHub</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>© 2026 Panefall contributors · MIT License</span>
+      <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a>
+    </footer>
+
+    <svg class="sprite" width="0" height="0" aria-hidden="true">
+      <symbol id="i-snow" viewBox="0 0 24 24">
+        <path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9.5 4.5 12 7l2.5-2.5M9.5 19.5 12 17l2.5 2.5M4 10.4l3.4-.9-.9-3.4M20 13.6l-3.4.9.9 3.4M4 13.6l3.4.9-.9 3.4M20 10.4l-3.4-.9.9-3.4" />
+      </symbol>
+      <symbol id="i-rain" viewBox="0 0 24 24">
+        <path d="M6.5 14h10.5a3.5 3.5 0 0 0 .4-6.98A5 5 0 0 0 7.8 6.2 4 4 0 0 0 6.5 14z" />
+        <path d="M8.5 17l-1 3M12.5 17l-1 3M16.5 17l-1 3" />
+      </symbol>
+      <symbol id="i-storm" viewBox="0 0 24 24">
+        <path d="M6.5 14h10.5a3.5 3.5 0 0 0 .4-6.98A5 5 0 0 0 7.8 6.2 4 4 0 0 0 6.5 14z" />
+        <path d="M12.5 15.5l-2 3.2h3l-2 3.3" />
+      </symbol>
+      <symbol id="i-leaves" viewBox="0 0 24 24">
+        <path d="M5 19c0-8 5-14 14-14 0 9-6 14-14 14z" />
+        <path d="M5 19 14.5 9.5" />
+      </symbol>
+      <symbol id="i-blossoms" viewBox="0 0 24 24">
+        <circle cx="12" cy="7.3" r="2.8" />
+        <circle cx="16.4" cy="10.5" r="2.8" />
+        <circle cx="14.7" cy="15.7" r="2.8" />
+        <circle cx="9.3" cy="15.7" r="2.8" />
+        <circle cx="7.6" cy="10.5" r="2.8" />
+        <circle cx="12" cy="12" r="1.3" />
+      </symbol>
+      <symbol id="i-pin" viewBox="0 0 24 24">
+        <path d="M12 21s-6-5.6-6-10.5a6 6 0 0 1 12 0C18 15.4 12 21 12 21z" />
+        <circle cx="12" cy="10.5" r="2" />
+      </symbol>
+    </svg>
+
+    <script src="engine/plow.js"></script>
+    <script src="engine/sim.js"></script>
+    <script src="site.js"></script>
+  </body>
+</html>

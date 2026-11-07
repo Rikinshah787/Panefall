@@ -1,0 +1,7 @@
+node_modules/
+build/
+dist/
+.DS_Store
+
+# Reference footage of another app, not part of Panefall.
+hero-3.mp4
